@@ -131,13 +131,6 @@
     font-size:.75rem;color:var(--son);margin-top:2px;
     letter-spacing:.01em;
   }
-  .thu-bac{
-    display:inline-block;font-size:.66rem;padding:1px 5px;
-    background:var(--vien);color:var(--muc-nhat);border-radius:2px;
-    margin-left:5px;vertical-align:middle;letter-spacing:.02em;
-  }
-  .thu-bac.truong{background:var(--son);color:#fff}
-
   .nhan-dau-re{
     display:inline-block;font-size:.66rem;padding:1px 5px;
     background:var(--nhan);color:#fff;border-radius:2px;
@@ -656,19 +649,22 @@ function theNguoi(p){
   const dr = p.huyet_thong ? '' :
     '<span class="nhan-dau-re">'+(p.gioi==='F'?'dâu':'rể')+'</span>';
 
-  // Nhan thu bac trong nha: con truong / con thu may.
-  // Gia pha Viet coi trong thu bac - phai nhin ra ngay.
-  let thuBac = '';
-  if(p.huyet_thong && p.cha){
-    thuBac = p.thu_tu === 0
-      ? '<span class="thu-bac truong">Trưởng</span>'
-      : '<span class="thu-bac">Thứ '+(p.thu_tu+1)+'</span>';
-  }
+  // KHONG dan nhan 'Truong'/'Thu'.
+  // Vi tri trong danh sach CHIL khong du de KHANG DINH ai la con truong:
+  //   - Gia pha co the chua nhap het anh em
+  //   - Thu tu nhap khong chac la thu tu sinh
+  //   - Theo thong le Viet, truong thuong la CON TRAI ca -
+  //     neu con dau la gai thi con trai thu moi la truong
+  // Nhan 'Truong' mang y nghia nang trong dong ho (thua tu, huong hoa).
+  // Dan nham la chuyen khong nho. Trang chi noi nhung gi no BIET CHAC.
+  //
+  // Thu tu SAP XEP van giu (anh em cung nha nam lien nhau, dung thu tu
+  // da nhap) - cai do vo hai va huu ich. Nguoi doc tu nhin ra.
 
   return '<button class="'+cls.join(' ')+'" onclick="moNguoi(\''+p.id+'\')">'+
            anhThe(p)+
            '<div class="the-noi">'+
-             '<div class="the-ten">'+toSang(p.ten)+dr+thuBac+'</div>'+
+             '<div class="the-ten">'+toSang(p.ten)+dr+'</div>'+
              '<div class="the-phu">'+phu+'</div>'+
              ngayMat+
            '</div>'+
