@@ -141,6 +141,30 @@
     font-family:'Be Vietnam Pro',sans-serif;font-size:.78rem;
     color:var(--muc-nhat);font-weight:400;letter-spacing:0;text-transform:none;
   }
+  /* Cụm anh em chung — con cùng một cha.
+     Tiêu đề ghi tên cha: vừa ngăn cách, vừa cho biết đó là con nhà ai. */
+  .cum{margin-bottom:18px}
+  .cum:last-child{margin-bottom:0}
+
+  .cum-tieu{
+    display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+    padding:0 0 6px 2px;margin-bottom:8px;
+    border-bottom:1px dashed var(--vien);
+  }
+  .cum-cha{
+    font-family:'Noto Serif',serif;
+    font-size:.86rem;font-weight:600;color:var(--muc);
+    cursor:pointer;text-decoration:none;
+    border-bottom:1px solid transparent;
+  }
+  a.cum-cha:hover{color:var(--son);border-color:var(--son)}
+  .cum-dem{
+    font-size:.74rem;color:var(--muc-nhat);
+  }
+  .cum-tieu.cum-le .cum-cha{
+    color:var(--muc-nhat);font-style:italic;font-weight:400;cursor:default;
+  }
+
   .luoi{
     display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:8px;
   }
@@ -593,7 +617,11 @@ function ve(){
         '<div class="doi-tieu">Đời '+(LAMA[d]||d)+
           '<span>'+ht+' con cháu'+(dr? ' · '+dr+' dâu/rể':'')+'</span>'+
         '</div>'+
-        '<div class="luoi">'+ ds.map(theNguoi).join('') +'</div>'+
+        // Chia cum anh em khi DUYET theo doi.
+        // Khi TIM KIEM, ket qua roi rac tu nhieu nha khac nhau - chia cum
+        // se ra hang loat cum mot nguoi, roi mat hon la khong chia.
+        (TU_KHOA ? '<div class="luoi">'+ds.map(theNguoi).join('')+'</div>'
+                 : veNhomAnhEm(ds))+
       '</div>'
     );
   });
@@ -688,6 +716,56 @@ function sapGiaPha(ds){
   }
 
   return kq;
+}
+
+// Chia mot doi thanh CAC CUM ANH EM CHUNG (con cung mot cha).
+// Anh em cung nha da nam lien nhau (nho sapGiaPha), nhung nhin vao luoi
+// khong thay ranh gioi. Ghi TEN CHA lam tieu de nhom -> vua ngan cach,
+// vua cho biet do la con nha ai. Dung thu nguoi doc can de 'xac dinh'.
+function veNhomAnhEm(ds){
+  const N = DL.nguoi;
+  const cum = [];      // [{cha: id|null, nguoi: [...]}]
+
+  for(const p of ds){
+    // Dau/re khong co cha trong ho -> gan vao cum cua VO/CHONG ho,
+    // de ho dung ngay canh nguoi minh lay, khong tach ra thanh cum rieng.
+    let chaId = p.cha;
+    if(!p.huyet_thong){
+      const ban = (p.vo_chong || []).map(id => N[id]).find(b => b && b.huyet_thong);
+      if(ban) chaId = ban.cha;
+    }
+
+    const cuoi = cum[cum.length - 1];
+    if(cuoi && cuoi.cha === (chaId || null)){
+      cuoi.nguoi.push(p);
+    }else{
+      cum.push({ cha: chaId || null, nguoi: [p] });
+    }
+  }
+
+  return cum.map(c => {
+    const cha = c.cha ? N[c.cha] : null;
+
+    // Dem RIENG con va dau/re. Truoc day dem gop -> '15 nguoi con'
+    // trong khi thuc ra co ca dau/re trong do. Sai.
+    const soCon = c.nguoi.filter(p => p.huyet_thong).length;
+    const soDR  = c.nguoi.length - soCon;
+    const dem = soCon + ' người con' + (soDR ? ' · ' + soDR + ' dâu/rể' : '');
+
+    const tieu = cha
+      ? '<div class="cum-tieu">'+
+          '<a class="cum-cha" onclick="moNguoi(\''+cha.id+'\')">'+esc(cha.ten)+'</a>'+
+          '<span class="cum-dem">'+dem+'</span>'+
+        '</div>'
+      : '<div class="cum-tieu cum-le">'+
+          '<span class="cum-cha">Chưa rõ cha</span>'+
+          '<span class="cum-dem">'+c.nguoi.length+' người</span>'+
+        '</div>';
+
+    return '<div class="cum">'+ tieu +
+             '<div class="luoi">'+ c.nguoi.map(theNguoi).join('') +'</div>'+
+           '</div>';
+  }).join('');
 }
 
 function theNguoi(p){
