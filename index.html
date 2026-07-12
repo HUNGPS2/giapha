@@ -121,7 +121,9 @@
     border-left:3px solid var(--vien);
   }
   .the:hover{border-color:var(--nhan);border-left-color:var(--son);transform:translateX(2px)}
-  .the.song{border-left-color:var(--song)}
+  .the.tt-con_song{border-left-color:var(--song)}    /* xanh reu — con song */
+  .the.tt-chua_ro {border-left-color:var(--nhan)}    /* vang dong — chua ro */
+  .the.tt-da_mat  {border-left-color:var(--vien)}    /* xam nhat — da mat */
   .the.dau-re{background:var(--giay-dam)}
   .the-ten{font-weight:600;font-size:.95rem;line-height:1.35}
   .the-phu{font-size:.78rem;color:var(--muc-nhat);margin-top:3px}
@@ -186,6 +188,8 @@
   }
   .vien-nho.doi{border-color:var(--son);color:var(--son);font-weight:600}
   .vien-nho.song{border-color:var(--song);color:var(--song)}
+  .vien-nho.chua-ro{border-color:var(--nhan);color:var(--nhan)}
+  .vien-nho.mat{border-color:var(--muc-nhat);color:var(--muc-nhat)}
 
   .khoi{margin-bottom:22px}
   .khoi-tieu{
@@ -391,8 +395,7 @@ function ve(){
 }
 
 function theNguoi(p){
-  const cls = ['the'];
-  if(p.con_song) cls.push('song');
+  const cls = ['the', 'tt-'+(p.trang_thai || 'con_song')];
   if(!p.huyet_thong) cls.push('dau-re');
 
   const namSinh = p.sinh ? p.sinh.match(/\d{4}/)?.[0] : null;
@@ -403,12 +406,14 @@ function theNguoi(p){
   if(namSinh && namMat)   phu = namSinh+'–'+namMat;
   else if(namSinh)        phu = 'Sinh '+namSinh;
   else if(namMat)         phu = 'Mất '+namMat;
+  else if(p.trang_thai === 'da_mat')
+                          phu = '<span class="thieu">không rõ năm sinh, năm mất</span>';
   else                    phu = '<span class="thieu">chưa rõ năm sinh</span>';
 
-  // Dong 2: ngay mat DAY DU (chi khi co ngay/thang, khong chi moi nam)
+  // Dong 2: ngay gio DAY DU (chi khi co ngay/thang, khong chi moi nam)
   let ngayMat = '';
   if(p.mat && /\d{1,2}\/\d{1,2}\//.test(p.mat)){
-    ngayMat = '<div class="the-mat">Mất '+esc(p.mat)+'</div>';
+    ngayMat = '<div class="the-mat">Giỗ '+esc(p.mat)+'</div>';
   }
 
   const dr = p.huyet_thong ? '' :
@@ -466,7 +471,8 @@ function veCaNhan(p){
   meta.push('<span class="vien-nho doi">Đời '+(LAMA[p.doi]||p.doi)+'</span>');
   meta.push('<span class="vien-nho">'+(p.gioi==='M'?'Nam':p.gioi==='F'?'Nữ':'—')+'</span>');
   if(!p.huyet_thong) meta.push('<span class="vien-nho">'+(p.gioi==='F'?'Con dâu':'Con rể')+'</span>');
-  if(p.con_song) meta.push('<span class="vien-nho song">Còn sống</span>');
+  if(p.trang_thai === 'con_song')      meta.push('<span class="vien-nho song">Còn sống</span>');
+  else if(p.trang_thai === 'chua_ro')  meta.push('<span class="vien-nho chua-ro">Chưa rõ</span>');
 
   const khoiDS = (tieu, ids) => {
     if(!ids || !ids.length) return '';
@@ -482,6 +488,33 @@ function veCaNhan(p){
   const hang = (nhan, gtri) =>
     '<div class="hang"><div class="hang-nhan">'+nhan+'</div><div>'+
     (gtri || '<span class="thieu">chưa rõ</span>')+'</div></div>';
+
+  // Dong ngay mat / tinh trang. Noi dung THAT su biet, khong suy dien.
+  function hangMat(p){
+    const tt = p.trang_thai || 'con_song';
+
+    if(p.mat){
+      const coNgay = /\d{1,2}\/\d{1,2}\//.test(p.mat);
+      return hang(coNgay ? 'Ngày giỗ' : 'Năm mất',
+                  '<span class="ngay-gio">'+esc(p.mat)+'</span>');
+    }
+
+    if(tt === 'da_mat'){
+      // Doi <= 11: chac chan da khuat, nhung khong ai ghi lai ngay.
+      // Noi ro la KHONG BIET, thay vi de trong cho nguoi doc tu suy.
+      return hang('Ngày mất',
+        '<span class="vien-nho mat">Đã mất</span> '+
+        '<span class="thieu">— không rõ ngày, không có trong gia phả</span>');
+    }
+
+    if(tt === 'chua_ro'){
+      return hang('Tình trạng',
+        '<span class="vien-nho chua-ro">Chưa rõ</span> '+
+        '<span class="thieu">— gia phả không ghi ngày mất</span>');
+    }
+
+    return hang('Tình trạng', '<span class="vien-nho song">Còn sống</span>');
+  }
 
   const chaMe = [];
   if(p.cha && N[p.cha]) chaMe.push('<div><a class="lien" onclick="moNguoi(\''+p.cha+'\')">'+esc(N[p.cha].ten)+'</a> <span class="thieu">— cha</span></div>');
@@ -501,12 +534,10 @@ function veCaNhan(p){
 
     '<div class="khoi">'+
       '<div class="khoi-tieu">Thân thế</div>'+
-      hang(p.con_song ? 'Năm sinh' : 'Ngày sinh', p.sinh ? esc(p.sinh) : '')+
+      hang(p.trang_thai === 'da_mat' ? 'Ngày sinh' : 'Năm sinh',
+           p.sinh ? esc(p.sinh) : '')+
       hang('Nơi sinh', p.noi_sinh ? esc(p.noi_sinh) : '')+
-      hang(p.con_song ? 'Tình trạng'
-                      : (/\d{1,2}\/\d{1,2}\//.test(p.mat) ? 'Ngày giỗ' : 'Năm mất'),
-           p.mat ? '<span class="ngay-gio">'+esc(p.mat)+'</span>'
-                 : '<span class="vien-nho song">Còn sống</span>')+
+      hangMat(p)+
     '</div>'+
 
     (chaMe.length
