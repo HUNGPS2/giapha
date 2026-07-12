@@ -191,6 +191,20 @@
   }
   .quay-lai:hover{color:var(--son)}
 
+  .thanh-tren{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:12px;flex-wrap:wrap;margin-bottom:14px;
+  }
+  .quay-lai{margin-bottom:0}
+  .nut-so-do{
+    font-family:inherit;font-size:.82rem;cursor:pointer;
+    padding:6px 12px;
+    background:#fff;color:var(--son);
+    border:1px solid var(--vien);border-radius:var(--r);
+    transition:border-color .13s;white-space:nowrap;
+  }
+  .nut-so-do:hover{border-color:var(--son)}
+
   .duong-doi{
     font-size:.82rem;color:var(--muc-nhat);
     padding:11px 14px;margin-bottom:20px;
@@ -747,13 +761,17 @@ function moNguoi(id){ location.hash = id; }
 
 function dinhTuyen(){
   const id = location.hash.slice(1);
+  const nut = $('#mo-so-do');
   if(id && DL.nguoi[id]){
     veCaNhan(DL.nguoi[id]);
     document.body.classList.add('dang-xem');
     window.scrollTo(0,0);
+    // Chan trang hien o CA HAI man -> nhan phai noi dung su that
+    if(nut) nut.textContent = 'Xem sơ đồ cây từ người này →';
   }else{
     document.body.classList.remove('dang-xem');
     ve();
+    if(nut) nut.textContent = 'Xem sơ đồ cây →';
   }
 }
 
@@ -877,7 +895,10 @@ function veCaNhan(p){
     : '';
 
   $('#man-ca-nhan').innerHTML =
-    '<button class="quay-lai" onclick="location.hash=\'\'">← Về danh sách</button>'+
+    '<div class="thanh-tren">'+
+      '<button class="quay-lai" onclick="location.hash=\'\'">← Về danh sách</button>'+
+      '<button class="nut-so-do" onclick="moSoDo(\''+p.id+'\')">Sơ đồ cây từ người này →</button>'+
+    '</div>'+
 
     '<div class="duong-doi">'+duong+'</div>'+
 
@@ -920,17 +941,56 @@ function veCaNhan(p){
     khoiDS('Anh chị em — '+p.anh_em.length+' người', p.anh_em);
 }
 
-// nút sơ đồ cây (Topola)
+// ============ Sơ đồ cây (Topola) ============
 // handleCors=false: goi thang file, khong qua CORS proxy cua Topola
-// (proxy do dang chet -> 'Failed to fetch'). GitHub Pages tu gui header CORS.
+//   (proxy do dang chet -> 'Failed to fetch'). GitHub Pages tu gui header CORS.
+// indi=<ID>: mo Topola voi NGUOI DO lam tam.
+//   Neu khong co, Topola tu chon mot nguoi bat ky - nen truoc day
+//   bam vao dau cung nhay den cung mot cho, khong lien quan gi den
+//   nguoi dang xem.
+function moSoDo(id){
+  const u = location.href.split('#')[0].replace(/[^/]*$/,'') + 'giapha.ged';
+  let link = 'https://pewu.github.io/topola-viewer/#/view?url=' +
+             encodeURIComponent(u) + '&handleCors=false';
+  if(id) link += '&indi=' + encodeURIComponent(id);
+  window.open(link, '_blank');
+}
+
+// Nút ở chân trang:
+//   - Dang xem mot nguoi  -> lay NGUOI DO lam tam
+//   - Dang o danh sach    -> lay THUY TO lam tam
+//
+// Truoc day khong truyen indi -> Topola tu chon mot nguoi bat ky
+// (thuong la nguoi dau file). Tuy tien, khong lien quan gi den cay.
+// Lay thuy to thi mo ra la thay ca dong ho tu goc - hop ly hon han.
+// ── TÂM MẶC ĐỊNH CỦA SƠ ĐỒ CÂY ──────────────────────────────
+// Cụ PHẠM ĐÌNH QUỲNH (đời X) — không phải Thủy tổ, nhưng là mốc
+// CÓ THẬT, KIỂM CHỨNG ĐƯỢC: phần mộ chí của cụ vẫn còn.
+// Các cụ đời trên chỉ còn tên trong gia phả, không còn dấu tích.
+// Nên nhìn dòng họ từ cụ Quỳnh là đáng tin nhất.
+//
+// ĐỔI TÂM SAU NÀY: sửa tên ở dòng dưới. Trang tự tìm theo tên,
+// không cắm cứng mã người — nên đổi tên trên MyHeritage cũng
+// không làm hỏng.
+const TEN_TAM = 'PHẠM ĐÌNH QUỲNH';
+
+function timTam(){
+  if(!DL) return null;
+  const ds = Object.values(DL.nguoi);
+
+  // 1. Tim dung cu Quynh
+  const tam = ds.find(p => p.ten === TEN_TAM && p.huyet_thong);
+  if(tam) return tam.id;
+
+  // 2. Khong thay (doi ten? xoa?) -> lui ve Thuy to, khong de trong
+  const goc = ds.filter(p => p.doi === 1 && p.huyet_thong);
+  return goc.length ? goc[0].id : null;
+}
+
 $('#mo-so-do').onclick = e=>{
   e.preventDefault();
-  const u = location.href.split('#')[0].replace(/[^/]*$/,'') + 'giapha.ged';
-  window.open(
-    'https://pewu.github.io/topola-viewer/#/view?url=' +
-    encodeURIComponent(u) + '&handleCors=false',
-    '_blank'
-  );
+  const id = location.hash.slice(1);
+  moSoDo(DL && DL.nguoi[id] ? id : timTam());
 };
 </script>
 </body>
