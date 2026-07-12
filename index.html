@@ -131,6 +131,13 @@
     font-size:.75rem;color:var(--son);margin-top:2px;
     letter-spacing:.01em;
   }
+  .thu-bac{
+    display:inline-block;font-size:.66rem;padding:1px 5px;
+    background:var(--vien);color:var(--muc-nhat);border-radius:2px;
+    margin-left:5px;vertical-align:middle;letter-spacing:.02em;
+  }
+  .thu-bac.truong{background:var(--son);color:#fff}
+
   .nhan-dau-re{
     display:inline-block;font-size:.66rem;padding:1px 5px;
     background:var(--nhan);color:#fff;border-radius:2px;
@@ -215,8 +222,89 @@
 
   .thieu{color:#B4A794;font-style:italic;font-size:.88rem}
 
+  /* ===== ẢNH =====
+     Ảnh cũ chụp giấy: méo mó, ố vàng, nghiêng, tỉ lệ đủ kiểu.
+     Để nguyên thì lưới nhấp nhô rất xấu.
+     Giải: ép về KHUNG VUÔNG, cắt bằng object-fit:cover,
+     canh 'center 30%' — lấy phần trên, nơi có khuôn mặt. */
+  .the{display:flex;gap:11px;align-items:flex-start}
+  .the-noi{flex:1;min-width:0}
+
+  .anh-the{
+    width:42px;height:42px;flex-shrink:0;
+    border-radius:50%;
+    object-fit:cover;object-position:center 28%;
+    border:1px solid var(--vien);
+    background:var(--giay-dam);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .anh-the.chu-cai{
+    color:#fff;font-family:'Noto Serif',serif;
+    font-size:1.05rem;font-weight:600;
+    border-color:transparent;
+  }
+
+  /* Chân dung trang cá nhân — như ảnh thờ */
+  .hs-anh{
+    width:112px;height:140px;flex-shrink:0;
+    object-fit:cover;object-position:center 25%;
+    border-radius:var(--r);
+    border:1px solid var(--vien);
+    box-shadow:0 1px 0 var(--vien), 3px 3px 0 rgba(155,34,38,.07);
+    cursor:zoom-in;
+    background:var(--giay-dam);
+  }
+  .hs-chu{flex:1;min-width:200px}
+
+  /* Ảnh phụ — người có nhiều ảnh */
+  .anh-phu{
+    display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;
+  }
+  .anh-phu img{
+    width:72px;height:72px;
+    object-fit:cover;object-position:center 28%;
+    border-radius:var(--r);border:1px solid var(--vien);
+    cursor:zoom-in;transition:border-color .13s;
+  }
+  .anh-phu img:hover{border-color:var(--son)}
+
+  /* Phóng to toàn màn hình */
+  .phong-to{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(36,30,24,.92);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;cursor:zoom-out;
+  }
+  .phong-to img{
+    max-width:100%;max-height:100%;
+    border-radius:var(--r);
+    box-shadow:0 4px 30px rgba(0,0,0,.4);
+  }
+
   .ngay-gio{
     color:var(--son);font-weight:600;
+  }
+
+  /* Nhan lich: ngay gio la AM, ngay sinh la DUONG.
+     Phai ghi ro - cung nham ngay la chuyen he trong. */
+  .am-lich{
+    font-size:.72rem;padding:1px 6px;
+    background:var(--son);color:#fff;border-radius:2px;
+    letter-spacing:.02em;white-space:nowrap;vertical-align:middle;
+  }
+  .duong-lich{
+    font-size:.72rem;padding:1px 6px;
+    background:var(--vien);color:var(--muc-nhat);border-radius:2px;
+    letter-spacing:.02em;white-space:nowrap;vertical-align:middle;
+  }
+
+  .mo-phan{color:var(--song);font-weight:500}
+
+  .ghi-chu{
+    font-size:.92rem;line-height:1.75;color:var(--muc);
+    background:var(--giay-dam);border-left:3px solid var(--nhan);
+    border-radius:var(--r);padding:13px 16px;
+    white-space:pre-wrap;
   }
 
   .moi-bs{
@@ -342,6 +430,7 @@
 <script>
 // ============ Dữ liệu ============
 let DL = null;
+let ANH = {};   // { id_nguoi: ['ten-file.jpg', ...] }
 let LOC_DOI = 0;        // 0 = tất cả
 let TU_KHOA = '';
 
@@ -358,9 +447,13 @@ function boDau(s){
 }
 
 // ============ Nạp ============
-fetch('data.json')
-  .then(r=>{ if(!r.ok) throw new Error('Không đọc được data.json'); return r.json(); })
-  .then(d=>{ DL=d; khoiDong(); })
+// Nap song song data.json + anh.json.
+// anh.json co the KHONG TON TAI (chua them anh) -> khong sao, coi nhu rong.
+Promise.all([
+  fetch('data.json').then(r=>{ if(!r.ok) throw new Error('Không đọc được data.json'); return r.json(); }),
+  fetch('anh.json').then(r=> r.ok ? r.json() : {}).catch(()=>({}))
+])
+  .then(([d, a])=>{ DL=d; ANH=a; khoiDong(); })
   .catch(e=>{
     $('#ket-qua').innerHTML =
       '<div class="rong">Không nạp được dữ liệu.<br><small>'+e.message+'</small></div>';
@@ -433,7 +526,7 @@ function ve(){
 
   const out = [];
   Object.keys(nhom).map(Number).sort((a,b)=>a-b).forEach(d=>{
-    const ds = nhom[d].sort((a,b)=>a.ten.localeCompare(b.ten,'vi'));
+    const ds = sapGiaPha(nhom[d]);
     const ht = ds.filter(p=>p.huyet_thong).length;
     const dr = ds.length - ht;
     out.push(
@@ -446,6 +539,92 @@ function ve(){
     );
   });
   $('#ket-qua').innerHTML = out.join('');
+}
+
+// ============ Ảnh ============
+// Anh cu chup giay thuong meo mo, o vang, nghieng. De nguyen thi luoi
+// nhap nho rat xau. Nen CAT VUONG va canh PHAN TREN - noi co khuon mat.
+// object-position: center 30% -> lay phan tren, khong cat mat.
+
+function anhCua(p){
+  const ds = ANH[p.id];
+  return (ds && ds.length) ? ds : null;
+}
+
+// Anh tron nho tren the danh sach. Ai khong co anh -> chu cai dau tren nen mau,
+// de luoi van DEU, khong lo cho.
+function anhThe(p){
+  const ds = anhCua(p);
+  if(ds){
+    return '<img class="anh-the" src="anh/'+encodeURIComponent(ds[0])+'" '+
+           'alt="" loading="lazy" onerror="this.replaceWith(chuCai(\''+
+           esc(p.ten).replace(/'/g,"\\'")+'\'))">';
+  }
+  return chuCaiHTML(p.ten);
+}
+
+// Chu cai dau, mau suy tu ten -> moi nguoi mot mau on dinh
+function mauTen(ten){
+  let h = 0;
+  for(let i=0;i<ten.length;i++) h = (h*31 + ten.charCodeAt(i)) % 360;
+  return 'hsl('+h+', 22%, 62%)';
+}
+function chuCaiHTML(ten){
+  const chu = ten.trim().split(/\s+/).pop()[0] || '?';
+  return '<span class="anh-the chu-cai" style="background:'+mauTen(ten)+'">'+
+         esc(chu)+'</span>';
+}
+function chuCai(ten){
+  const d = document.createElement('span');
+  d.className = 'anh-the chu-cai';
+  d.style.background = mauTen(ten);
+  d.textContent = ten.trim().split(/\s+/).pop()[0] || '?';
+  return d;
+}
+
+// ============ Sắp xếp theo lối gia phả ============
+// KHONG sap theo van chu cai - gia pha xep theo THU TU ANH EM:
+// con truong truoc, con thu sau; nhanh chi truong truoc nhanh chi thu.
+// Dau/re dat NGAY CANH chong/vo, khong lan vao hang con chau.
+function sapGiaPha(ds){
+  const N = DL.nguoi;
+
+  // So sanh hai day khoa_sap: [0,0,2] = con truong > con truong > con thu 3.
+  // So sanh tung cap mot -> nhanh cua con truong luon ra truoc.
+  const soSanh = (a, b) => {
+    const ka = a.khoa_sap || [], kb = b.khoa_sap || [];
+    for(let i = 0; i < Math.max(ka.length, kb.length); i++){
+      const va = ka[i] ?? -1, vb = kb[i] ?? -1;
+      if(va !== vb) return va - vb;
+    }
+    return a.ten.localeCompare(b.ten, 'vi');
+  };
+
+  // Buoc 1: chi sap NGUOI HUYET THONG (con chau mang dong mau ho Pham).
+  const huyet = ds.filter(p => p.huyet_thong).sort(soSanh);
+
+  // Buoc 2: chen dau/re vao NGAY SAU chong/vo cua ho.
+  const daXep = new Set();
+  const kq = [];
+  for(const p of huyet){
+    kq.push(p);
+    daXep.add(p.id);
+    // vo/chong cua nguoi nay, neu cung o doi nay va la dau/re
+    for(const bid of (p.vo_chong || [])){
+      const b = N[bid];
+      if(b && !b.huyet_thong && !daXep.has(bid) && ds.some(x => x.id === bid)){
+        kq.push(b);
+        daXep.add(bid);
+      }
+    }
+  }
+
+  // Buoc 3: dau/re khong gan duoc voi ai (chong/vo o doi khac) -> xep cuoi.
+  for(const p of ds){
+    if(!daXep.has(p.id)) kq.push(p);
+  }
+
+  return kq;
 }
 
 function theNguoi(p){
@@ -477,10 +656,22 @@ function theNguoi(p){
   const dr = p.huyet_thong ? '' :
     '<span class="nhan-dau-re">'+(p.gioi==='F'?'dâu':'rể')+'</span>';
 
+  // Nhan thu bac trong nha: con truong / con thu may.
+  // Gia pha Viet coi trong thu bac - phai nhin ra ngay.
+  let thuBac = '';
+  if(p.huyet_thong && p.cha){
+    thuBac = p.thu_tu === 0
+      ? '<span class="thu-bac truong">Trưởng</span>'
+      : '<span class="thu-bac">Thứ '+(p.thu_tu+1)+'</span>';
+  }
+
   return '<button class="'+cls.join(' ')+'" onclick="moNguoi(\''+p.id+'\')">'+
-           '<div class="the-ten">'+toSang(p.ten)+dr+'</div>'+
-           '<div class="the-phu">'+phu+'</div>'+
-           ngayMat+
+           anhThe(p)+
+           '<div class="the-noi">'+
+             '<div class="the-ten">'+toSang(p.ten)+dr+thuBac+'</div>'+
+             '<div class="the-phu">'+phu+'</div>'+
+             ngayMat+
+           '</div>'+
          '</button>';
 }
 
@@ -510,6 +701,35 @@ function dinhTuyen(){
     document.body.classList.remove('dang-xem');
     ve();
   }
+}
+
+// Chan dung tren trang ca nhan - nhu anh tho: vuong, vien mong mau son.
+function chanDung(p){
+  const ds = anhCua(p);
+  if(!ds) return '';
+  return '<img class="hs-anh" src="anh/'+encodeURIComponent(ds[0])+'" '+
+         'alt="Chân dung '+esc(p.ten)+'" onclick="phongTo(this.src)">';
+}
+
+// Anh phu: nguoi co nhieu anh -> xep hang nho duoi phan dau.
+function anhPhu(p){
+  const ds = anhCua(p);
+  if(!ds || ds.length < 2) return '';
+  return '<div class="anh-phu">'+
+    ds.slice(1).map(f =>
+      '<img src="anh/'+encodeURIComponent(f)+'" alt="" loading="lazy" '+
+      'onclick="phongTo(this.src)">'
+    ).join('')+
+  '</div>';
+}
+
+// Bam vao anh -> phong to toan man hinh
+function phongTo(src){
+  const o = document.createElement('div');
+  o.className = 'phong-to';
+  o.innerHTML = '<img src="'+src+'" alt="">';
+  o.onclick = ()=> o.remove();
+  document.body.appendChild(o);
 }
 
 function veCaNhan(p){
@@ -555,15 +775,19 @@ function veCaNhan(p){
       const coNam  = /\b\d{4}\b/.test(p.mat);           // co nam: '16/4/1995'
       const coNgay = /^\d{1,2}\/\d{1,2}/.test(p.mat);   // co ngay: '23/2' hoac '16/4/1995'
 
+      // NGAY GIO LA AM LICH. Phai ghi RO - nguoi doc mac dinh la duong lich,
+      // ma cung nham ngay la chuyen he trong. Khong de ho "tu hieu".
       if(coNgay && coNam){
-        return hang('Ngày giỗ', '<span class="ngay-gio">'+esc(p.mat)+'</span>');
+        return hang('Ngày giỗ',
+          '<span class="ngay-gio">'+esc(p.mat)+'</span> '+
+          '<span class="am-lich">âm lịch</span>');
       }
       if(coNgay && !coNam){
         // Rat pho bien voi cu to: nam mat that lac qua nhieu doi,
         // nhung NGAY GIO thi con - vi moi nam con chau van cung.
-        // Ngay gio moi la thu quan trong, khong phai nam.
         return hang('Ngày giỗ',
           '<span class="ngay-gio">'+esc(p.mat)+'</span> '+
+          '<span class="am-lich">âm lịch</span> '+
           '<span class="thieu">— chưa rõ năm mất</span>');
       }
       return hang('Năm mất', '<span class="ngay-gio">'+esc(p.mat)+'</span>');
@@ -604,21 +828,34 @@ function veCaNhan(p){
     '<div class="duong-doi">'+duong+'</div>'+
 
     '<div class="hs-dau">'+
-      '<div>'+
+      chanDung(p)+
+      '<div class="hs-chu">'+
         '<div class="hs-ten">'+esc(p.ten)+'</div>'+
         '<div class="hs-meta">'+meta.join('')+'</div>'+
       '</div>'+
     '</div>'+
+
+    anhPhu(p)+
 
     moiBoSung+
 
     '<div class="khoi">'+
       '<div class="khoi-tieu">Thân thế</div>'+
       hang(p.trang_thai === 'da_mat' ? 'Ngày sinh' : 'Năm sinh',
-           p.sinh ? esc(p.sinh) : '')+
+           p.sinh ? esc(p.sinh)+' <span class="duong-lich">dương lịch</span>' : '')+
       hang('Nơi sinh', p.noi_sinh ? esc(p.noi_sinh) : '')+
       hangMat(p)+
+      (p.mo ? hang('Mộ phần', '<span class="mo-phan">'+esc(p.mo)+'</span>') : '')+
     '</div>'+
+
+    // Ghi chu: cong trang, giai thoai, su tich. Day moi la thu con chau
+    // muon doc - gia pha khong chi la ngay thang.
+    (p.ghi_chu
+      ? '<div class="khoi">'+
+          '<div class="khoi-tieu">Ghi chú</div>'+
+          '<div class="ghi-chu">'+esc(p.ghi_chu).replace(/\n/g,'<br>')+'</div>'+
+        '</div>'
+      : '')+
 
     (chaMe.length
       ? '<div class="khoi"><div class="khoi-tieu">Cha mẹ</div><div class="ds-lien">'+chaMe.join('')+'</div></div>'
