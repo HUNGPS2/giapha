@@ -498,10 +498,16 @@ function veCaNhan(p){
 }
 
 // nút sơ đồ cây (Topola)
+// handleCors=false: goi thang file, khong qua CORS proxy cua Topola
+// (proxy do dang chet -> 'Failed to fetch'). GitHub Pages tu gui header CORS.
 $('#mo-so-do').onclick = e=>{
   e.preventDefault();
-  const u = location.href.replace(/[^/]*$/,'') + 'giapha.ged';
-  window.open('https://pewu.github.io/topola-viewer/#/view?url='+encodeURIComponent(u), '_blank');
+  const u = location.href.split('#')[0].replace(/[^/]*$/,'') + 'giapha.ged';
+  window.open(
+    'https://pewu.github.io/topola-viewer/#/view?url=' +
+    encodeURIComponent(u) + '&handleCors=false',
+    '_blank'
+  );
 };
 </script>
 </body>
