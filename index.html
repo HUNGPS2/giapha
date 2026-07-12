@@ -18,6 +18,14 @@
     --vien:#D8CDB6;
     --nhan:#B08C3F;          /* nhu vang dong */
     --song:#2F5D50;          /* xanh reu - nguoi con song */
+
+    /* Mau phan biet NAM / NU trong dong ho.
+       Nen the phai RAT NHAT - 166 the ma dam se choi mat.
+       Sac tram, hop voi nen giay nga. */
+    --nam:#3A6B7C;           /* xanh lam tram - nam */
+    --nam-nen:#EDF3F5;       /* nen the nam */
+    --nu:#9B4A5E;            /* hong dat - nu */
+    --nu-nen:#F7EEF0;        /* nen the nu */
     --r:3px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -99,6 +107,28 @@
 
   /* ---- Danh sach ---- */
   .dem{font-size:.85rem;color:var(--muc-nhat);margin-bottom:14px}
+  /* Chú giải màu — người xem cần biết màu nghĩa là gì */
+  .chu-giai{
+    display:flex;gap:13px;flex-wrap:wrap;align-items:center;
+    font-size:.76rem;color:var(--muc-nhat);
+    padding:9px 12px;margin-bottom:20px;
+    background:var(--giay-dam);border-radius:var(--r);
+  }
+  .chu-giai span{display:inline-flex;align-items:center;gap:5px}
+  .chu-giai .tach{color:var(--vien)}
+  .chu-giai .o{
+    width:13px;height:13px;border-radius:2px;
+    border:1px solid var(--vien);display:inline-block;
+  }
+  .chu-giai .o.ht-nam{background:var(--nam-nen)}
+  .chu-giai .o.ht-nu {background:var(--nu-nen)}
+  .chu-giai .o.dau-re{background:#fff}
+  .chu-giai .vach{
+    width:3px;height:14px;border-radius:1px;display:inline-block;
+  }
+  .chu-giai .vach.song{background:var(--song)}
+  .chu-giai .vach.mat {background:var(--vien)}
+
   .doi-nhom{margin-bottom:30px}
   .doi-tieu{
     font-family:'Noto Serif',serif;font-size:.95rem;font-weight:600;
@@ -121,10 +151,17 @@
     border-left:3px solid var(--vien);
   }
   .the:hover{border-color:var(--nhan);border-left-color:var(--son);transform:translateX(2px)}
-  .the.tt-con_song{border-left-color:var(--song)}    /* xanh reu — con song */
-  .the.tt-chua_ro {border-left-color:var(--nhan)}    /* vang dong — chua ro */
-  .the.tt-da_mat  {border-left-color:var(--vien)}    /* xam nhat — da mat */
-  .the.dau-re{background:var(--giay-dam)}
+  .the.tt-con_song{border-left-color:var(--song)}    /* xanh rêu — còn sống */
+  .the.tt-chua_ro {border-left-color:var(--nhan)}    /* vàng đồng — chưa rõ */
+  .the.tt-da_mat  {border-left-color:var(--vien)}    /* xám nhạt — đã mất */
+
+  /* Nền thẻ: con cháu HUYẾT THỐNG có nền màu nhạt (nam/nữ khác sắc).
+     Dâu/rể để nền TRẮNG — họ không mang dòng máu họ Phạm,
+     nên không nên nổi hơn con cháu trong họ. */
+  .the.ht-nam {background:var(--nam-nen)}
+  .the.ht-nu  {background:var(--nu-nen)}
+  .the.ht-khac{background:var(--giay-dam)}
+  .the.dau-re {background:#fff}
   .the-ten{font-weight:600;font-size:.95rem;line-height:1.35}
   .the-phu{font-size:.78rem;color:var(--muc-nhat);margin-top:3px}
   .the-mat{
@@ -231,11 +268,16 @@
     background:var(--giay-dam);
     display:flex;align-items:center;justify-content:center;
   }
+  /* Chữ cái đầu (người chưa có ảnh) — màu theo GIỚI TÍNH.
+     Nam: xanh lam trầm.  Nữ: hồng đất. */
   .anh-the.chu-cai{
     color:#fff;font-family:'Noto Serif',serif;
     font-size:1.05rem;font-weight:600;
     border-color:transparent;
+    background:var(--muc-nhat);
   }
+  .anh-the.chu-cai.nam{background:var(--nam)}
+  .anh-the.chu-cai.nu {background:var(--nu)}
 
   /* Chân dung trang cá nhân — như ảnh thờ */
   .hs-anh{
@@ -391,6 +433,16 @@
     </div>
 
     <div class="dem" id="dem"></div>
+
+    <div class="chu-giai">
+      <span><i class="o ht-nam"></i> Nam trong họ</span>
+      <span><i class="o ht-nu"></i> Nữ trong họ</span>
+      <span><i class="o dau-re"></i> Dâu / rể</span>
+      <span class="tach">·</span>
+      <span><i class="vach song"></i> Còn sống</span>
+      <span><i class="vach mat"></i> Đã mất</span>
+    </div>
+
     <div id="ket-qua"></div>
 
   </div>
@@ -549,29 +601,33 @@ function anhCua(p){
 function anhThe(p){
   const ds = anhCua(p);
   if(ds){
+    // Anh loi (thieu file, sai ten) -> thay bang chu cai dau, khong de o trong
     return '<img class="anh-the" src="anh/'+encodeURIComponent(ds[0])+'" '+
-           'alt="" loading="lazy" onerror="this.replaceWith(chuCai(\''+
-           esc(p.ten).replace(/'/g,"\\'")+'\'))">';
+           'alt="" loading="lazy" data-id="'+p.id+'" '+
+           'onerror="this.replaceWith(chuCai(DL.nguoi[this.dataset.id]))">';
   }
-  return chuCaiHTML(p.ten);
+  return chuCaiHTML(p);
 }
 
-// Chu cai dau, mau suy tu ten -> moi nguoi mot mau on dinh
-function mauTen(ten){
-  let h = 0;
-  for(let i=0;i<ten.length;i++) h = (h*31 + ten.charCodeAt(i)) % 360;
-  return 'hsl('+h+', 22%, 62%)';
+// Chu cai dau cho nguoi CHUA CO ANH.
+// Mau theo GIOI TINH - co y nghia. (Truoc day mau suy tu ten -> ngau nhien,
+// khong cho biet dieu gi.)
+//   Nam -> xanh reu
+//   Nu  -> son do
+function lopGioi(gioi){
+  return gioi === 'M' ? 'nam' : gioi === 'F' ? 'nu' : 'khac';
 }
-function chuCaiHTML(ten){
-  const chu = ten.trim().split(/\s+/).pop()[0] || '?';
-  return '<span class="anh-the chu-cai" style="background:'+mauTen(ten)+'">'+
-         esc(chu)+'</span>';
+function chuDau(ten){
+  return (ten.trim().split(/\s+/).pop()[0] || '?');
 }
-function chuCai(ten){
+function chuCaiHTML(p){
+  return '<span class="anh-the chu-cai '+lopGioi(p.gioi)+'">'+
+         esc(chuDau(p.ten))+'</span>';
+}
+function chuCai(p){
   const d = document.createElement('span');
-  d.className = 'anh-the chu-cai';
-  d.style.background = mauTen(ten);
-  d.textContent = ten.trim().split(/\s+/).pop()[0] || '?';
+  d.className = 'anh-the chu-cai ' + lopGioi(p.gioi);
+  d.textContent = chuDau(p.ten);
   return d;
 }
 
@@ -622,7 +678,9 @@ function sapGiaPha(ds){
 
 function theNguoi(p){
   const cls = ['the', 'tt-'+(p.trang_thai || 'con_song')];
-  if(!p.huyet_thong) cls.push('dau-re');
+  // Nen the: con chau HUYET THONG co nen mau nhat (nam/nu khac sac).
+  // Dau/re -> nen TRANG, de khong noi hon con chau trong ho.
+  cls.push(p.huyet_thong ? 'ht-'+lopGioi(p.gioi) : 'dau-re');
 
   const namSinh = p.sinh ? p.sinh.match(/\b(\d{4})\b/)?.[1] : null;
   // '23/2' khong co nam -> namMat = null (dung bat nham so 23 lam nam)
