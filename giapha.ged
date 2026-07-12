@@ -173,6 +173,11 @@
 1 DEAT Y
 2 DATE 3 JUL 1924
 2 PLAC Vietnam
+1 BIRT
+2 PLAC Vietnam
+2 NOTE <p>L&uacute;c sinh thời, cụ giữ chức Hậu Bổ, n&ecirc;n ngyời ta gọi l&agrave; Cụ Hậu Dĩnh. Cụ được thăng chức Ch&aacute;nh Cửu Phẩm Văn Giai.</p>
+1 BURI
+2 PLAC Nghĩa trang quê nhà
 1 FAMS @F500007@
 1 FAMS @F500071@
 1 FAMS @F500072@
@@ -737,9 +742,13 @@
 2 GIVN PHẠM ĐÌNH QUỲNH
 1 SEX M
 1 BIRT
+2 NOTE <p>L&uacute;c sinh thời Cụ giữ chức Tri huyện Huyện Thanh H&agrave;, n&ecirc;n người ta gọi l&agrave; Cụ Huyện Quỳnh. Cụ được thăng thụ H&agrave;n l&acirc;m tu soạn.<
+3 CONC /p>
+3 CONC irc;ng của dể x&acirc;y dựng x&atilde; nh&agrave;, v&agrave; lập bia Phả k&yacute; họ Phạm năm 1891.</p>
 1 DEAT Y
 2 DATE 27 MAY 1900
 2 PLAC Vietnam
+2 NOTE An táng tại Đống Đồng, Cầu Lạ quê nhà
 1 FAMS @F500054@
 1 FAMC @F500081@
 0 @I500188@ INDI
@@ -1458,8 +1467,8 @@
 1 HUSB @I500187@
 1 CHIL @I500190@
 1 CHIL @I500192@
-1 CHIL @I500023@
 1 CHIL @I500188@
+1 CHIL @I500023@
 1 CHIL @I500223@
 1 CHIL @I500224@
 1 CHIL @I500225@
