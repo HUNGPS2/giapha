@@ -125,6 +125,10 @@
   .the.dau-re{background:var(--giay-dam)}
   .the-ten{font-weight:600;font-size:.95rem;line-height:1.35}
   .the-phu{font-size:.78rem;color:var(--muc-nhat);margin-top:3px}
+  .the-mat{
+    font-size:.75rem;color:var(--son);margin-top:2px;
+    letter-spacing:.01em;
+  }
   .nhan-dau-re{
     display:inline-block;font-size:.66rem;padding:1px 5px;
     background:var(--nhan);color:#fff;border-radius:2px;
@@ -207,6 +211,10 @@
 
   .thieu{color:#B4A794;font-style:italic;font-size:.88rem}
 
+  .ngay-gio{
+    color:var(--son);font-weight:600;
+  }
+
   footer{
     margin-top:50px;padding:20px 0 40px;
     border-top:1px solid var(--vien);
@@ -280,7 +288,9 @@ let LOC_DOI = 0;        // 0 = tất cả
 let TU_KHOA = '';
 
 const $ = s => document.querySelector(s);
-const LAMA = ['','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+const LAMA = ['','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII',
+              'XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX',
+              'XXI','XXII','XXIII','XXIV','XXV'];
 
 // Bỏ dấu — phải khớp đúng với hàm bo_dau() bên Python
 function boDau(s){
@@ -385,13 +395,21 @@ function theNguoi(p){
   if(p.con_song) cls.push('song');
   if(!p.huyet_thong) cls.push('dau-re');
 
-  const nam = p.sinh ? p.sinh.match(/\d{4}/)?.[0] : null;
-  const mat = p.mat  ? p.mat.match(/\d{4}/)?.[0]  : null;
+  const namSinh = p.sinh ? p.sinh.match(/\d{4}/)?.[0] : null;
+  const namMat  = p.mat  ? p.mat.match(/\d{4}/)?.[0]  : null;
+
+  // Dong 1: khoang nam, gon de quet nhanh trong danh sach 166 nguoi
   let phu;
-  if(nam && mat)      phu = nam+'–'+mat;
-  else if(nam)        phu = 'Sinh '+nam;
-  else if(mat)        phu = 'Mất '+mat;
-  else                phu = '<span class="thieu">chưa rõ năm sinh</span>';
+  if(namSinh && namMat)   phu = namSinh+'–'+namMat;
+  else if(namSinh)        phu = 'Sinh '+namSinh;
+  else if(namMat)         phu = 'Mất '+namMat;
+  else                    phu = '<span class="thieu">chưa rõ năm sinh</span>';
+
+  // Dong 2: ngay mat DAY DU (chi khi co ngay/thang, khong chi moi nam)
+  let ngayMat = '';
+  if(p.mat && /\d{1,2}\/\d{1,2}\//.test(p.mat)){
+    ngayMat = '<div class="the-mat">Mất '+esc(p.mat)+'</div>';
+  }
 
   const dr = p.huyet_thong ? '' :
     '<span class="nhan-dau-re">'+(p.gioi==='F'?'dâu':'rể')+'</span>';
@@ -399,6 +417,7 @@ function theNguoi(p){
   return '<button class="'+cls.join(' ')+'" onclick="moNguoi(\''+p.id+'\')">'+
            '<div class="the-ten">'+toSang(p.ten)+dr+'</div>'+
            '<div class="the-phu">'+phu+'</div>'+
+           ngayMat+
          '</button>';
 }
 
@@ -484,8 +503,10 @@ function veCaNhan(p){
       '<div class="khoi-tieu">Thân thế</div>'+
       hang(p.con_song ? 'Năm sinh' : 'Ngày sinh', p.sinh ? esc(p.sinh) : '')+
       hang('Nơi sinh', p.noi_sinh ? esc(p.noi_sinh) : '')+
-      hang(p.con_song ? 'Tình trạng' : 'Ngày mất',
-           p.mat ? esc(p.mat) : '<span class="vien-nho song">Còn sống</span>')+
+      hang(p.con_song ? 'Tình trạng'
+                      : (/\d{1,2}\/\d{1,2}\//.test(p.mat) ? 'Ngày giỗ' : 'Năm mất'),
+           p.mat ? '<span class="ngay-gio">'+esc(p.mat)+'</span>'
+                 : '<span class="vien-nho song">Còn sống</span>')+
     '</div>'+
 
     (chaMe.length
