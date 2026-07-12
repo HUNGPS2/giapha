@@ -1,0 +1,19 @@
+Kéo thả file .ged vào capnhat.bat.chạy
+Không cần mở CMD, không cần gõ lệnh. Script tự chạy, hiện tiến trình, hỏi xác nhận trước khi push.
+
+
+Cần cài trước hai thứ (chỉ một lần):
+Python — https://www.python.org/downloads/
+Lúc cài, nhớ tick ô "Add Python to PATH" ở màn hình đầu tiên. Không tick thì script sẽ báo không tìm thấy Python. Đây là lỗi phổ biến nhất.
+
+Git — https://git-scm.com/download/win
+Cài mặc định, bấm Next hết là được.
+
+index.html — toàn bộ trang (tìm kiếm + trang cá nhân + đường dẫn nhánh)
+data.json — dữ liệu đã xử lý (159 người, 55 gia đình, 9 đời)
+giapha.ged — GEDCOM đã lọc, dùng cho nút "Xem sơ đồ cây" (Topola). File này do
+convert.py sinh ra, KHÔNG phải bản gốc từ MyHeritage. Xem mục Riêng tư bên dưới.
+convert.py — bộ chuyển GEDCOM → JSON (lọc dữ liệu riêng tư)
+kiemtra.py — kiểm tra an toàn trước khi push (dùng chung cho cả hai script)
+capnhat.bat — cập nhật một lệnh, cho Windows (kéo thả file .ged vào là chạy)
+capnhat.sh — cập nhật một lệnh, cho macOS/Linux
