@@ -219,14 +219,53 @@
     color:var(--son);font-weight:600;
   }
 
+  .moi-bs{
+    font-size:.86rem;color:var(--muc-nhat);line-height:1.6;
+    background:var(--giay-dam);border-left:3px solid var(--nhan);
+    border-radius:var(--r);padding:11px 14px;margin-bottom:20px;
+  }
+  .moi-bs a{
+    color:var(--son);font-weight:600;text-decoration:none;
+    border-bottom:1px solid var(--vien);white-space:nowrap;
+  }
+  .moi-bs a:hover{border-color:var(--son)}
+
   footer{
-    margin-top:50px;padding:20px 0 40px;
-    border-top:1px solid var(--vien);
+    margin-top:50px;padding-top:24px;
+    border-top:2px solid var(--muc);
+  }
+
+  .lien-he{
+    background:var(--giay-dam);
+    border-left:3px solid var(--son);
+    border-radius:var(--r);
+    padding:16px 18px;
+    margin-bottom:20px;
+  }
+  .lh-moi{
+    font-size:.9rem;color:var(--muc);line-height:1.65;
+    margin-bottom:10px;
+  }
+  .lh-nguoi{
+    font-size:.92rem;display:flex;gap:9px;flex-wrap:wrap;align-items:center;
+    padding-top:10px;border-top:1px dashed var(--vien);
+  }
+  .lh-nguoi b{font-weight:600}
+  .lh-tach{color:var(--vien)}
+  .lh-dt{
+    color:var(--son);text-decoration:none;font-weight:600;
+    border-bottom:1px solid transparent;
+    letter-spacing:.01em;
+  }
+  .lh-dt:hover{border-color:var(--son)}
+
+  .chan-duoi{
+    padding-bottom:40px;
     font-size:.8rem;color:var(--muc-nhat);
     display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
   }
-  footer a{color:var(--son);text-decoration:none;border-bottom:1px solid transparent}
-  footer a:hover{border-color:var(--son)}
+  .chan-duoi a{color:var(--son);text-decoration:none;border-bottom:1px solid transparent}
+  .chan-duoi a:hover{border-color:var(--son)}
 
   mark{background:#F5E6A8;color:var(--muc);padding:0 1px;border-radius:2px}
 
@@ -279,8 +318,23 @@
   <div class="man-ca-nhan" id="man-ca-nhan"></div>
 
   <footer>
-    <div>Gia phả họ Phạm Đình · Cập nhật từ dữ liệu gia phả</div>
-    <div><a href="#" id="mo-so-do">Xem sơ đồ cây →</a></div>
+    <div class="lien-he">
+      <div class="lh-moi">
+        Gia phả còn nhiều chỗ chưa đầy đủ. Bà con nào biết thêm về ngày sinh, ngày giỗ,
+        hay các đời còn thiếu, xin liên hệ để cập nhật.
+      </div>
+      <div class="lh-nguoi">
+        <b>Phạm Sỹ Hùng</b>
+        <span class="lh-tach">·</span>
+        <a href="tel:0913214549" class="lh-dt">0913 214 549</a>
+        <span class="lh-tach">·</span>
+        <span>TP. Hà Nội</span>
+      </div>
+    </div>
+    <div class="chan-duoi">
+      <div>Gia phả họ Phạm Đình — xã Hà Bắc</div>
+      <div><a href="#" id="mo-so-do">Xem sơ đồ cây →</a></div>
+    </div>
   </footer>
 
 </div>
@@ -398,8 +452,9 @@ function theNguoi(p){
   const cls = ['the', 'tt-'+(p.trang_thai || 'con_song')];
   if(!p.huyet_thong) cls.push('dau-re');
 
-  const namSinh = p.sinh ? p.sinh.match(/\d{4}/)?.[0] : null;
-  const namMat  = p.mat  ? p.mat.match(/\d{4}/)?.[0]  : null;
+  const namSinh = p.sinh ? p.sinh.match(/\b(\d{4})\b/)?.[1] : null;
+  // '23/2' khong co nam -> namMat = null (dung bat nham so 23 lam nam)
+  const namMat  = p.mat  ? p.mat.match(/\b(\d{4})\b/)?.[1]  : null;
 
   // Dong 1: khoang nam, gon de quet nhanh trong danh sach 166 nguoi
   let phu;
@@ -410,9 +465,12 @@ function theNguoi(p){
                           phu = '<span class="thieu">không rõ năm sinh, năm mất</span>';
   else                    phu = '<span class="thieu">chưa rõ năm sinh</span>';
 
-  // Dong 2: ngay gio DAY DU (chi khi co ngay/thang, khong chi moi nam)
+  // Dong 2: ngay gio. Co 2 dang:
+  //   '16/4/1995' - ngay day du
+  //   '23/2'      - CHI ngay gio, khong con nam (rat pho bien voi cu to)
+  // Ca hai deu la ngay gio - deu hien.
   let ngayMat = '';
-  if(p.mat && /\d{1,2}\/\d{1,2}\//.test(p.mat)){
+  if(p.mat && /^\d{1,2}\/\d{1,2}(\/|$)/.test(p.mat)){
     ngayMat = '<div class="the-mat">Giỗ '+esc(p.mat)+'</div>';
   }
 
@@ -494,9 +552,21 @@ function veCaNhan(p){
     const tt = p.trang_thai || 'con_song';
 
     if(p.mat){
-      const coNgay = /\d{1,2}\/\d{1,2}\//.test(p.mat);
-      return hang(coNgay ? 'Ngày giỗ' : 'Năm mất',
-                  '<span class="ngay-gio">'+esc(p.mat)+'</span>');
+      const coNam  = /\b\d{4}\b/.test(p.mat);           // co nam: '16/4/1995'
+      const coNgay = /^\d{1,2}\/\d{1,2}/.test(p.mat);   // co ngay: '23/2' hoac '16/4/1995'
+
+      if(coNgay && coNam){
+        return hang('Ngày giỗ', '<span class="ngay-gio">'+esc(p.mat)+'</span>');
+      }
+      if(coNgay && !coNam){
+        // Rat pho bien voi cu to: nam mat that lac qua nhieu doi,
+        // nhung NGAY GIO thi con - vi moi nam con chau van cung.
+        // Ngay gio moi la thu quan trong, khong phai nam.
+        return hang('Ngày giỗ',
+          '<span class="ngay-gio">'+esc(p.mat)+'</span> '+
+          '<span class="thieu">— chưa rõ năm mất</span>');
+      }
+      return hang('Năm mất', '<span class="ngay-gio">'+esc(p.mat)+'</span>');
     }
 
     if(tt === 'da_mat'){
@@ -504,13 +574,13 @@ function veCaNhan(p){
       // Noi ro la KHONG BIET, thay vi de trong cho nguoi doc tu suy.
       return hang('Ngày mất',
         '<span class="vien-nho mat">Đã mất</span> '+
-        '<span class="thieu">— không rõ ngày, không có trong gia phả</span>');
+        '<span class="thieu">— chưa có thông tin để cập nhật</span>');
     }
 
     if(tt === 'chua_ro'){
       return hang('Tình trạng',
         '<span class="vien-nho chua-ro">Chưa rõ</span> '+
-        '<span class="thieu">— gia phả không ghi ngày mất</span>');
+        '<span class="thieu">— chưa có thông tin để cập nhật</span>');
     }
 
     return hang('Tình trạng', '<span class="vien-nho song">Còn sống</span>');
@@ -519,6 +589,14 @@ function veCaNhan(p){
   const chaMe = [];
   if(p.cha && N[p.cha]) chaMe.push('<div><a class="lien" onclick="moNguoi(\''+p.cha+'\')">'+esc(N[p.cha].ten)+'</a> <span class="thieu">— cha</span></div>');
   if(p.me  && N[p.me])  chaMe.push('<div><a class="lien" onclick="moNguoi(\''+p.me+'\')">'+esc(N[p.me].ten)+'</a> <span class="thieu">— mẹ</span></div>');
+
+  // Neu ho so thieu nhieu -> moi bo sung ngay tai cho,
+  // thay vi bat nguoi doc keo xuong chan trang moi thay so dien thoai.
+  const thieuNhieu = !p.sinh && !p.mat;
+  const moiBoSung = thieuNhieu
+    ? '<div class="moi-bs">Chưa có thông tin về người này. '+
+      'Bà con nào biết, xin gọi <a href="tel:0913214549">0913 214 549</a> để cập nhật.</div>'
+    : '';
 
   $('#man-ca-nhan').innerHTML =
     '<button class="quay-lai" onclick="location.hash=\'\'">← Về danh sách</button>'+
@@ -532,6 +610,8 @@ function veCaNhan(p){
       '</div>'+
     '</div>'+
 
+    moiBoSung+
+
     '<div class="khoi">'+
       '<div class="khoi-tieu">Thân thế</div>'+
       hang(p.trang_thai === 'da_mat' ? 'Ngày sinh' : 'Năm sinh',
@@ -542,7 +622,7 @@ function veCaNhan(p){
 
     (chaMe.length
       ? '<div class="khoi"><div class="khoi-tieu">Cha mẹ</div><div class="ds-lien">'+chaMe.join('')+'</div></div>'
-      : '<div class="khoi"><div class="khoi-tieu">Cha mẹ</div><div class="thieu">Không có trong gia phả</div></div>')+
+      : '<div class="khoi"><div class="khoi-tieu">Cha mẹ</div><div class="thieu">Chưa có thông tin để cập nhật</div></div>')+
 
     khoiDS(p.gioi==='M' ? 'Vợ' : p.gioi==='F' ? 'Chồng' : 'Vợ / chồng', p.vo_chong)+
     khoiDS('Con — '+p.con.length+' người', p.con)+

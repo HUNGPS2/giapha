@@ -3,12 +3,14 @@ setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 REM ==================================================================
-REM  capnhat.bat - Update the family tree site with one action.
+REM  capnhat.bat - Loc du lieu gia pha tu file GEDCOM cua MyHeritage.
 REM
-REM  Usage:  drag-drop the new .ged file onto this file.
+REM  Usage: drag-drop the new .ged file onto this file.
 REM
-REM  Steps: backup -> convert+filter -> safety check -> confirm -> push
-REM  If any step fails, it STOPS. It never pushes bad data.
+REM  Sinh ra HAI file da loc:
+REM     data.json    - cho trang chinh
+REM     giapha.ged   - cho nut "Xem so do cay" (Topola)
+REM  Roi ban tu upload CA HAI len GitHub.
 REM
 REM  NOTE: This file must stay pure ASCII (no Vietnamese accents).
 REM  Windows CMD reads .bat in a legacy codepage; UTF-8 accents get
@@ -17,7 +19,7 @@ REM ==================================================================
 
 echo.
 echo ==========================================
-echo   CAP NHAT GIA PHA HO PHAM DINH
+echo   LOC DU LIEU GIA PHA HO PHAM DINH
 echo ==========================================
 
 REM ---- 0. Kiem tra dau vao ----
@@ -75,19 +77,9 @@ if not defined PY (
     exit /b 1
 )
 
-where git >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo  [LOI] Khong tim thay Git.
-    echo  Cai Git tai: https://git-scm.com/download/win
-    echo.
-    pause
-    exit /b 1
-)
-
 REM ---- 1. Sao luu ban cu ----
 echo.
-echo  [1/4] Sao luu ban hien tai...
+echo  [1/3] Sao luu ban hien tai...
 
 if not exist ".saoluu" mkdir ".saoluu"
 
@@ -106,7 +98,7 @@ if exist "data.json" (
 
 REM ---- 2. Chuyen doi + loc ----
 echo.
-echo  [2/4] Chuyen doi va loc du lieu...
+echo  [2/3] Chuyen doi va loc du lieu...
 echo.
 
 %PY% convert.py "%NGUON%" data.json
@@ -121,16 +113,17 @@ if errorlevel 1 (
 
 REM ---- 3. Kiem tra an toan ----
 echo.
-echo  [3/4] Kiem tra an toan...
+echo  [3/3] Kiem tra an toan...
 echo.
 
 %PY% kiemtra.py
 if errorlevel 1 (
     echo.
     echo  ==========================================
-    echo   KIEM TRA THAT BAI - KHONG PUSH
+    echo   KIEM TRA THAT BAI - DUNG UPLOAD!
     echo  ==========================================
     echo.
+    echo  File vua sinh ra CO VAN DE. Dung dua len GitHub.
     echo  Ban cu van con trong .saoluu\
     echo.
     pause
@@ -148,73 +141,33 @@ if !CU! GTR 0 (
     if !GIAM! GTR 10 (
         echo.
         echo  [CANH BAO] Giam !GIAM! nguoi so voi ban cu - BAT THUONG.
-        echo  Kiem tra ky. File cu van o .saoluu\
-        echo.
-        set "TRA="
-        set /p "TRA=  Van tiep tuc? (go co de tiep): "
-        if /i not "!TRA!"=="co" (
-            echo.
-            echo  Da huy. Khong push gi ca.
-            pause
-            exit /b 0
-        )
+        echo  Kiem tra ky truoc khi upload. File cu van o .saoluu\
     )
 )
 
-REM ---- 4. Push len GitHub ----
-echo.
-echo  [4/4] Day len GitHub...
-
-git rev-parse --git-dir >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo  [LOI] Thu muc nay chua noi voi GitHub.
-    echo.
-    echo  Chay ketnoi-github.bat truoc ^(chi can 1 lan^).
-    echo.
-    pause
-    exit /b 1
-)
-
-git diff --quiet -- data.json giapha.ged 2>nul
-if not errorlevel 1 (
-    echo.
-    echo        Du lieu khong doi - khong can push.
-    echo.
-    pause
-    exit /b 0
-)
-
-echo.
-echo        Thay doi:
-git diff --stat -- data.json giapha.ged
-
-echo.
-set "TRA="
-set /p "TRA=  Day len GitHub? (Enter = co, go k = khong): "
-if /i "!TRA!"=="k" (
-    echo.
-    echo  Da huy. File moi van nam tren may, chua push.
-    pause
-    exit /b 0
-)
-
-git add data.json giapha.ged
-git commit -q -m "Cap nhat gia pha - !MOI! nguoi"
-git push
-
-if errorlevel 1 (
-    echo.
-    echo  [LOI] Push that bai. Kiem tra mang / dang nhap GitHub.
-    echo.
-    pause
-    exit /b 1
-)
-
+REM ---- Xong ----
 echo.
 echo ==========================================
-echo   XONG. Trang cap nhat sau 1-2 phut.
-echo   https://hungps2.github.io/giapha/
+echo   XONG. Hai file da san sang:
+echo.
+echo      data.json     ^<- trang chinh
+echo      giapha.ged    ^<- nut "Xem so do cay"
+echo.
+echo   UPLOAD CA HAI len GitHub repo giapha.
+echo   ^(Github.com -^> repo giapha -^> Add file
+echo    -^> Upload files -^> keo ca 2 file vao^)
+echo.
+echo   LUU Y: chi upload 2 file NAY.
+echo   KHONG upload file .ged goc tu MyHeritage -
+echo   ban goc con nguyen ngay/thang sinh nguoi
+echo   con song, email, dia chi.
 echo ==========================================
+echo.
+
+REM Mo thu muc de tien keo file len GitHub
+set "MO="
+set /p "MO=  Mo thu muc nay luon? (Enter = co, k = khong): "
+if /i not "!MO!"=="k" start "" "%~dp0"
+
 echo.
 pause
