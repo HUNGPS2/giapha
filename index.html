@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gia phả họ Phạm Đình — xã Hà Bắc</title>
+<title>Gia phả họ PHẠM ĐÌNH — xã Cẩm Chế, huyện Thanh Hà</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
@@ -351,11 +351,16 @@
      Bia mộ, sắc phong, gia phả chữ Nho, nhà thờ họ.
      KHÔNG cắt vuông như ảnh chân dung — bia mộ và sắc phong thường
      cao hoặc dài, cắt vuông sẽ mất chữ. Giữ nguyên tỉ lệ gốc. */
+  /* Dùng flex-wrap thay grid: grid auto-fill để lại cột trống khi chỉ có
+     một ảnh, nhìn như bị ép trái. Flex thì ảnh tự giãn cho vừa. */
   .tl-luoi{
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
-    gap:14px;
+    display:flex;flex-wrap:wrap;gap:16px;
   }
-  .tl-o{margin:0}
+  .tl-o{
+    margin:0;
+    flex:1 1 240px;      /* co giãn, tối thiểu 240px */
+    max-width:340px;     /* một ảnh cũng không phình quá to */
+  }
   .tl-o img{
     width:100%;height:auto;              /* giữ tỉ lệ gốc */
     display:block;
@@ -367,24 +372,49 @@
   }
   .tl-o img:hover{border-color:var(--son)}
   .tl-o figcaption{
-    font-size:.78rem;line-height:1.5;
+    font-size:.8rem;line-height:1.55;
     color:var(--muc-nhat);
-    padding:7px 2px 0;
+    padding:8px 2px 0;
     font-style:italic;
   }
 
   /* Phóng to toàn màn hình */
   .phong-to{
     position:fixed;inset:0;z-index:200;
-    background:rgba(36,30,24,.92);
+    background:rgba(36,30,24,.93);
     display:flex;align-items:center;justify-content:center;
-    padding:24px;cursor:zoom-out;
+    padding:56px 24px 24px;cursor:zoom-out;
+  }
+  .pt-trong{
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    max-width:100%;max-height:100%;
   }
   .phong-to img{
-    max-width:100%;max-height:100%;
+    max-width:100%;max-height:78vh;
+    object-fit:contain;
     border-radius:var(--r);
     box-shadow:0 4px 30px rgba(0,0,0,.4);
+    cursor:default;
   }
+  .pt-loi{
+    color:#E8DFCE;font-size:.86rem;font-style:italic;
+    text-align:center;max-width:640px;line-height:1.6;
+  }
+
+  /* Nút đóng — phải rõ ràng. Trước đây chỉ bấm vào nền mới thoát được,
+     người đọc không biết, tưởng bị kẹt. */
+  .pt-dong{
+    position:absolute;top:14px;right:16px;
+    width:38px;height:38px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.1rem;line-height:1;
+    background:rgba(255,255,255,.12);color:#fff;
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:50%;
+    cursor:pointer;
+    transition:background .13s;
+  }
+  .pt-dong:hover{background:rgba(255,255,255,.24)}
 
   .ngay-gio{
     color:var(--son);font-weight:600;
@@ -486,9 +516,9 @@
 <div class="khung">
 
   <header>
-    <div class="dai-tu">Gia phả <span class="ho">họ Phạm Đình</span></div>
+    <div class="dai-tu">Gia phả <span class="ho">họ PHẠM ĐÌNH</span></div>
     <div class="phu-de">
-      <span>xã Hà Bắc<i class="dia-cu">(xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ)</i></span>
+      <span>xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ</span>
       <span>·</span>
       <span><b id="tong-nguoi">—</b> người</span>
       <span>·</span>
@@ -545,7 +575,7 @@
       </div>
     </div>
     <div class="chan-duoi">
-      <div>Gia phả họ Phạm Đình — xã Hà Bắc <i class="dia-cu">(xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ)</i></div>
+      <div>Gia phả họ PHẠM ĐÌNH — xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ</div>
       <div><a href="#" id="mo-so-do">Xem sơ đồ cây →</a></div>
     </div>
   </footer>
@@ -959,7 +989,8 @@ function anhTuLieu(p){
     const loi = ct[a.so] || ct[String(a.so)] || '';
     return '<figure class="tl-o">'+
              '<img src="anh/'+encodeURIComponent(a.f)+'" alt="'+esc(loi)+'" '+
-             'loading="lazy" onclick="phongTo(this.src)">'+
+             'loading="lazy" data-loi="'+esc(loi)+'" '+
+             'onclick="phongTo(this.src, this.dataset.loi)">'+
              (loi ? '<figcaption>'+esc(loi)+'</figcaption>' : '')+
            '</figure>';
   }).join('');
@@ -971,11 +1002,31 @@ function anhTuLieu(p){
 }
 
 // Bam vao anh -> phong to toan man hinh
-function phongTo(src){
+function phongTo(src, loi){
   const o = document.createElement('div');
   o.className = 'phong-to';
-  o.innerHTML = '<img src="'+src+'" alt="">';
-  o.onclick = ()=> o.remove();
+
+  // Phai co NUT DONG ro rang. Truoc day chi bam vao nen moi thoat duoc -
+  // nguoi doc khong biet, tuong bi ket.
+  o.innerHTML =
+    '<button class="pt-dong" title="Đóng (Esc)">✕</button>'+
+    '<div class="pt-trong">'+
+      '<img src="'+src+'" alt="">'+
+      (loi ? '<div class="pt-loi">'+esc(loi)+'</div>' : '')+
+    '</div>';
+
+  const dong = ()=>{
+    o.remove();
+    document.removeEventListener('keydown', phim);
+  };
+  const phim = e =>{ if(e.key === 'Escape') dong(); };
+
+  o.onclick = e =>{
+    // Bam vao NEN hoac nut X -> dong.
+    // Bam vao chinh anh -> khong dong (de con phong to xem ky).
+    if(e.target.tagName !== 'IMG') dong();
+  };
+  document.addEventListener('keydown', phim);
   document.body.appendChild(o);
 }
 
