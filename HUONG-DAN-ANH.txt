@@ -1,0 +1,73 @@
+THEM ANH VAO GIA PHA
+====================
+
+Co HAI LOAI anh, TACH BACH, khong lan lon:
+
+  1. CHAN DUNG  - anh mat nguoi
+  2. TU LIEU    - bia mo, sac phong, nha tho ho, gia pha chu Nho
+
+
+===========================================================
+1. ANH CHAN DUNG
+===========================================================
+
+Dat ten theo DANH-SACH.txt:
+
+   pham-dinh-quynh.jpg      <- anh CHINH (hien tren the va trang ca nhan)
+   pham-dinh-quynh-2.jpg    <- anh phu (luc tre, luc ve gia)
+   pham-dinh-quynh-3.jpg
+
+Trang TU CAT VUONG va canh phan tren (noi co khuon mat), nen:
+  - Anh doc, anh ngang, anh vuong deu hien DEU NHAU
+  - Khong can chinh anh truoc
+
+Neu mot anh bi cat lech mat, tu crop lai roi tha de len - vay la xong.
+
+Ai CHUA CO ANH: trang hien chu cai dau tren nen mau (nam mot mau,
+nu mot mau). Luoi van deu, khong lo cho.
+
+
+===========================================================
+2. ANH TU LIEU
+===========================================================
+
+Dat ten co duoi -tl1, -tl2:
+
+   pham-dinh-quynh-tl1.jpg
+   pham-dinh-quynh-tl2.jpg
+
+CHU THICH go THANG TRONG NOTE cua nguoi do, trong Gramps:
+
+   Luc sinh thoi Cu giu chuc Tri huyen Huyen Thanh Ha...
+
+   Cu da chu tri hoi hop hai xa ban bac viec tu sua mieu, dinh...
+
+   [tl1] Bia Pha ky ho Pham, lap nam 1891
+   [tl2] Mo cu tai Dong Dong, Cau La
+
+Trang se:
+  - Tach cac dong [tl...] ra khoi phan ke chuyen
+  - Hien anh + chu thich, o muc "Tu lieu" rieng ben duoi Ghi chu
+  - GIU NGUYEN TI LE anh (khong cat vuong nhu chan dung), vi bia mo
+    va sac phong thuong cao/dai - cat vuong se mat chu
+
+
+===========================================================
+CACH LAM
+===========================================================
+
+  1. Bo anh vao thu muc anh\
+  2. BAM DUP anh-vao.bat
+  3. Upload len GitHub:
+       - thu muc  anh\    (vao thu muc anh/)
+       - file     anh.json (vao THU MUC GOC, canh index.html)
+
+anh-vao.bat se bao:
+  - Anh tu lieu nao CHUA CO chu thich trong Note
+  - File nao dat ten SAI (khong khop voi ai)
+
+
+THAY ANH SAU NAY
+================
+Tha file moi de len file cu, chay lai anh-vao.bat, upload lai.
+Khong phai lam gi them.
