@@ -347,6 +347,32 @@
   }
   .anh-phu img:hover{border-color:var(--son)}
 
+  /* ===== ẢNH TƯ LIỆU =====
+     Bia mộ, sắc phong, gia phả chữ Nho, nhà thờ họ.
+     KHÔNG cắt vuông như ảnh chân dung — bia mộ và sắc phong thường
+     cao hoặc dài, cắt vuông sẽ mất chữ. Giữ nguyên tỉ lệ gốc. */
+  .tl-luoi{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+    gap:14px;
+  }
+  .tl-o{margin:0}
+  .tl-o img{
+    width:100%;height:auto;              /* giữ tỉ lệ gốc */
+    display:block;
+    border:1px solid var(--vien);
+    border-radius:var(--r);
+    background:var(--giay-dam);
+    cursor:zoom-in;
+    transition:border-color .13s;
+  }
+  .tl-o img:hover{border-color:var(--son)}
+  .tl-o figcaption{
+    font-size:.78rem;line-height:1.5;
+    color:var(--muc-nhat);
+    padding:7px 2px 0;
+    font-style:italic;
+  }
+
   /* Phóng to toàn màn hình */
   .phong-to{
     position:fixed;inset:0;z-index:200;
@@ -419,6 +445,15 @@
   }
   .lh-nguoi b{font-weight:600}
   .lh-tach{color:var(--vien)}
+  .lh-dt-nhan{color:var(--muc-nhat)}
+
+  /* Dia danh cu - de nguoi trong ho nhan ra que goc */
+  .dia-cu{
+    display:block;font-style:normal;
+    font-size:.76rem;font-weight:400;
+    color:var(--muc-nhat);letter-spacing:0;
+    margin-top:2px;
+  }
   .lh-dt{
     color:var(--son);text-decoration:none;font-weight:600;
     border-bottom:1px solid transparent;
@@ -453,7 +488,7 @@
   <header>
     <div class="dai-tu">Gia phả <span class="ho">họ Phạm Đình</span></div>
     <div class="phu-de">
-      <span>xã Hà Bắc</span>
+      <span>xã Hà Bắc<i class="dia-cu">(xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ)</i></span>
       <span>·</span>
       <span><b id="tong-nguoi">—</b> người</span>
       <span>·</span>
@@ -497,19 +532,20 @@
   <footer>
     <div class="lien-he">
       <div class="lh-moi">
-        Gia phả còn nhiều chỗ chưa đầy đủ. Bà con nào biết thêm về ngày sinh, ngày giỗ,
-        hay các đời còn thiếu, xin liên hệ để cập nhật.
+        Gia phả có thể chưa chính xác và chưa đầy đủ. Bà con nào biết thêm về ngày sinh,
+        ngày giỗ, hay các đời còn thiếu, xin liên hệ để cập nhật.
       </div>
       <div class="lh-nguoi">
-        <b>Phạm Sỹ Hùng</b>
+        <b>Mr. Hùng</b>
         <span class="lh-tach">·</span>
+        <span class="lh-dt-nhan">ĐT (zalo):</span>
         <a href="tel:0913214549" class="lh-dt">0913 214 549</a>
         <span class="lh-tach">·</span>
         <span>TP. Hà Nội</span>
       </div>
     </div>
     <div class="chan-duoi">
-      <div>Gia phả họ Phạm Đình — xã Hà Bắc</div>
+      <div>Gia phả họ Phạm Đình — xã Hà Bắc <i class="dia-cu">(xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ)</i></div>
       <div><a href="#" id="mo-so-do">Xem sơ đồ cây →</a></div>
     </div>
   </footer>
@@ -519,7 +555,8 @@
 <script>
 // ============ Dữ liệu ============
 let DL = null;
-let ANH = {};   // { id_nguoi: ['ten-file.jpg', ...] }
+let ANH = {};   // chan dung: { id_nguoi: ['ten-file.jpg', ...] }
+let TL  = {};   // tu lieu  : { id_nguoi: [{f:'...-tl1.jpg', so:1}, ...] }
 let LOC_DOI = 0;        // 0 = tất cả
 let TU_KHOA = '';
 
@@ -542,7 +579,14 @@ Promise.all([
   fetch('data.json').then(r=>{ if(!r.ok) throw new Error('Không đọc được data.json'); return r.json(); }),
   fetch('anh.json').then(r=> r.ok ? r.json() : {}).catch(()=>({}))
 ])
-  .then(([d, a])=>{ DL=d; ANH=a; khoiDong(); })
+  .then(([d, a])=>{
+    DL = d;
+    // anh.json co hai muc: chan dung va tu lieu, TACH BACH.
+    // Ban cu chi la mot object phang -> van doc duoc, coi la chan dung.
+    ANH = a.chan_dung || a || {};
+    TL  = a.tu_lieu   || {};
+    khoiDong();
+  })
   .catch(e=>{
     $('#ket-qua').innerHTML =
       '<div class="rong">Không nạp được dữ liệu.<br><small>'+e.message+'</small></div>';
@@ -903,6 +947,29 @@ function anhPhu(p){
   '</div>';
 }
 
+// Anh TU LIEU: bia mo, sac phong, nha tho ho.
+// Khac chan dung - anh lon hon, co CHU THICH ben duoi.
+// Chu thich go trong Note cua Gramps: '[tl1] Bia Pha ky ho Pham, lap nam 1891'
+function anhTuLieu(p){
+  const ds = TL[p.id];
+  if(!ds || !ds.length) return '';
+
+  const ct = p.ct_anh || {};
+  const o = ds.map(a => {
+    const loi = ct[a.so] || ct[String(a.so)] || '';
+    return '<figure class="tl-o">'+
+             '<img src="anh/'+encodeURIComponent(a.f)+'" alt="'+esc(loi)+'" '+
+             'loading="lazy" onclick="phongTo(this.src)">'+
+             (loi ? '<figcaption>'+esc(loi)+'</figcaption>' : '')+
+           '</figure>';
+  }).join('');
+
+  return '<div class="khoi">'+
+           '<div class="khoi-tieu">Tư liệu</div>'+
+           '<div class="tl-luoi">'+o+'</div>'+
+         '</div>';
+}
+
 // Bam vao anh -> phong to toan man hinh
 function phongTo(src){
   const o = document.createElement('div');
@@ -1039,6 +1106,8 @@ function veCaNhan(p){
           '<div class="ghi-chu">'+esc(p.ghi_chu).replace(/\n/g,'<br>')+'</div>'+
         '</div>'
       : '')+
+
+    anhTuLieu(p)+
 
     (chaMe.length
       ? '<div class="khoi"><div class="khoi-tieu">Cha mẹ</div><div class="ds-lien">'+chaMe.join('')+'</div></div>'
