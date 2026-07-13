@@ -161,6 +161,12 @@
   .cum-dem{
     font-size:.74rem;color:var(--muc-nhat);
   }
+  .cum-me{
+    font-size:.72rem;color:var(--nu);
+    padding:1px 6px;border:1px solid var(--nu-nen);
+    background:var(--nu-nen);border-radius:2px;
+    white-space:nowrap;
+  }
   .cum-tieu.cum-le .cum-cha{
     color:var(--muc-nhat);font-style:italic;font-weight:400;cursor:default;
   }
@@ -724,41 +730,65 @@ function sapGiaPha(ds){
 // vua cho biet do la con nha ai. Dung thu nguoi doc can de 'xac dinh'.
 function veNhomAnhEm(ds){
   const N = DL.nguoi;
-  const cum = [];      // [{cha: id|null, nguoi: [...]}]
+  const cum = [];      // [{goc: id|null, nguoi: [...]}]
+
+  // Tim NGUOI SINH RA mang dong mau ho Pham - cha HOAC me.
+  //
+  // Con cua CON GAI trong ho: cha la re (ho khac), me moi la nguoi
+  // mang dong mau Pham. Nhom ho duoi ten cha la sai - va neu cha khong
+  // co trong cay thi ra 'Chua ro cha', cang vo nghia.
+  //
+  // Vi du: Le Quoc Khanh - cha la Le Cu (re), me la Pham Thi Dung.
+  // Phai nhom duoi 'PHAM THI DUNG', khong phai 'Le Cu' hay 'Chua ro cha'.
+  function nguoiGoc(p){
+    const cha = p.cha ? N[p.cha] : null;
+    const me  = p.me  ? N[p.me]  : null;
+    if(cha && cha.huyet_thong) return cha.id;   // cha trong ho
+    if(me  && me.huyet_thong)  return me.id;    // me trong ho (cha la re)
+    return (cha || me || {}).id || null;        // ca hai ngoai ho
+  }
 
   for(const p of ds){
-    // Dau/re khong co cha trong ho -> gan vao cum cua VO/CHONG ho,
-    // de ho dung ngay canh nguoi minh lay, khong tach ra thanh cum rieng.
-    let chaId = p.cha;
-    if(!p.huyet_thong){
+    // Dau/re khong co cha me trong ho -> gan vao cum cua VO/CHONG ho,
+    // de ho dung ngay canh nguoi minh lay, khong tach thanh cum rieng.
+    let gocId;
+    if(p.huyet_thong){
+      gocId = nguoiGoc(p);
+    }else{
       const ban = (p.vo_chong || []).map(id => N[id]).find(b => b && b.huyet_thong);
-      if(ban) chaId = ban.cha;
+      gocId = ban ? nguoiGoc(ban) : null;
     }
 
     const cuoi = cum[cum.length - 1];
-    if(cuoi && cuoi.cha === (chaId || null)){
+    if(cuoi && cuoi.goc === (gocId || null)){
       cuoi.nguoi.push(p);
     }else{
-      cum.push({ cha: chaId || null, nguoi: [p] });
+      cum.push({ goc: gocId || null, nguoi: [p] });
     }
   }
 
   return cum.map(c => {
-    const cha = c.cha ? N[c.cha] : null;
+    const goc = c.goc ? N[c.goc] : null;
 
-    // Dem RIENG con va dau/re. Truoc day dem gop -> '15 nguoi con'
+    // Dem RIENG con va dau/re. Dem gop se ra '15 nguoi con'
     // trong khi thuc ra co ca dau/re trong do. Sai.
     const soCon = c.nguoi.filter(p => p.huyet_thong).length;
     const soDR  = c.nguoi.length - soCon;
     const dem = soCon + ' người con' + (soDR ? ' · ' + soDR + ' dâu/rể' : '');
 
-    const tieu = cha
+    // Nhom duoi ten ME -> ghi ro 'con của bà', de nguoi doc khong ngo ngac
+    // khi thay ten nu o vi tri thuong la ten cha.
+    const quaMe = goc && goc.gioi === 'F'
+      ? '<span class="cum-me">con của bà</span>' : '';
+
+    const tieu = goc
       ? '<div class="cum-tieu">'+
-          '<a class="cum-cha" onclick="moNguoi(\''+cha.id+'\')">'+esc(cha.ten)+'</a>'+
+          quaMe+
+          '<a class="cum-cha" onclick="moNguoi(\''+goc.id+'\')">'+esc(goc.ten)+'</a>'+
           '<span class="cum-dem">'+dem+'</span>'+
         '</div>'
       : '<div class="cum-tieu cum-le">'+
-          '<span class="cum-cha">Chưa rõ cha</span>'+
+          '<span class="cum-cha">Chưa rõ cha mẹ</span>'+
           '<span class="cum-dem">'+c.nguoi.length+' người</span>'+
         '</div>';
 
