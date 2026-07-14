@@ -600,6 +600,32 @@
     .chu-giai{display:none}
   }
 
+  /* ===== HÀNG GIA ĐÌNH =====
+     Mỗi gia đình một hàng: chồng + tất cả vợ nằm cùng hàng.
+     Cụ có 2–4 vợ (cụ Dĩnh đời 11 có 4 bà) vẫn gọn trong một hàng,
+     không lạc sang hàng khác lẫn với gia đình bên cạnh. */
+  .hang-gd{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(215px, 1fr));
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .hang-gd:last-child{margin-bottom:0}
+
+  /* Hàng có vợ/chồng: nối liền bằng một vạch mờ, để thấy đây là một nhà */
+  .hang-gd.co-doi{
+    position:relative;
+    padding-left:9px;
+    border-left:2px solid var(--vien);
+    border-radius:2px;
+  }
+
+  @media(max-width:640px){
+    /* Điện thoại hẹp: cho xuống dòng, nhưng vạch bên trái vẫn giữ
+       nên vẫn nhận ra đây là một gia đình. */
+    .hang-gd{grid-template-columns:1fr}
+  }
+
 </style>
 </head>
 <body>
@@ -653,9 +679,9 @@
   <footer>
     <div class="lien-he">
       <div class="lh-moi">
-        Gia phả có thể chưa chính xác và đủ. Bà con nào biết thêm về năm sinh,
-        ngày giỗ... hay các đời còn thiếu, xin liên hệ <b>Hùng</b> — Số ĐT (zalo):
-        <a href="tel:0913214549" class="lh-dt">0913 214 549</a> để cập nhật.
+        Gia phả hiện còn chưa chính xác và đầy đủ. Bà con nào biết thêm các thông tin
+        năm sinh, ngày giỗ... hay các đời còn thiếu, xin liên hệ <b>Hùng</b> — Số ĐT (zalo):
+        <a href="tel:0913214549" class="lh-dt">0913 214 549</a> để cập nhật hoàn thiện.
       </div>
     </div>
     <div class="chan-duoi">
@@ -1158,10 +1184,70 @@ function veNhomAnhEm(ds){
           '<span class="cum-dem">'+c.nguoi.length+' người</span>'+
         '</div>';
 
-    return '<div class="cum">'+ tieu +
-             '<div class="luoi">'+ c.nguoi.map(theNguoi).join('') +'</div>'+
-           '</div>';
+    return '<div class="cum">'+ tieu + veHangGiaDinh(c.nguoi) + '</div>';
   }).join('');
+}
+
+// Chia mot cum anh em thanh CAC HANG, MOI GIA DINH MOT HANG.
+//
+// Truoc day tat ca do vao mot luoi 3 cot chay lien tuc, nen:
+//   [Mien] [Le Thi Cuc] [Do]
+//   [Ng.Thi Cat] [Le Thi Mun] [Phiem]     <- hai vo cu Do lac sang hang khac,
+//   [Hoang Thi Tho] ...                       cu Phiem dinh vao vo cu Do
+//
+// Gio: chong + TAT CA vo cung mot hang, khong tran sang hang khac.
+// Cu co 2-4 vo (co that: cu Dinh doi 11 co 4 ba) van gon trong mot hang.
+function veHangGiaDinh(ds){
+  const N = DL.nguoi;
+  const daXep = new Set();
+  const hang = [];
+
+  for(const p of ds){
+    if(daXep.has(p.id)) continue;
+
+    if(p.huyet_thong){
+      // Nguoi trong ho -> lay ca vo/chong cua ho vao CUNG HANG
+      const nhom = [p];
+      daXep.add(p.id);
+      for(const bid of (p.vo_chong || [])){
+        const b = N[bid];
+        if(b && !b.huyet_thong && !daXep.has(bid) && ds.some(x => x.id === bid)){
+          nhom.push(b);
+          daXep.add(bid);
+        }
+      }
+      hang.push(nhom);
+    }else{
+      // Dau/re ma chong/vo o doi khac -> dung rieng mot hang
+      hang.push([p]);
+      daXep.add(p.id);
+    }
+  }
+
+  // Gom NGUOI DOC THAN lien nhau vao CHUNG mot luoi.
+  // Neu de moi nguoi mot hang: 11 nguoi doc than -> 11 hang, moi hang
+  // chi 1 the trong luoi 3 cot -> phi 2/3 khong gian.
+  const ra = [];
+  let dang_gom = [];
+
+  const xa_gom = () => {
+    if(dang_gom.length){
+      ra.push('<div class="hang-gd">'+ dang_gom.map(theNguoi).join('') +'</div>');
+      dang_gom = [];
+    }
+  };
+
+  for(const nhom of hang){
+    if(nhom.length > 1){
+      xa_gom();                     // co vo/chong -> hang RIENG
+      ra.push('<div class="hang-gd co-doi">'+ nhom.map(theNguoi).join('') +'</div>');
+    }else{
+      dang_gom.push(nhom[0]);       // doc than -> gom lai
+    }
+  }
+  xa_gom();
+
+  return ra.join('');
 }
 
 function theNguoi(p){
