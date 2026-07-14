@@ -23,9 +23,11 @@
        Nen the phai RAT NHAT - 166 the ma dam se choi mat.
        Sac tram, hop voi nen giay nga. */
     --nam:#3A6B7C;           /* xanh lam tram - nam */
-    --nam-nen:#EDF3F5;       /* nen the nam */
+    --nam-nen:#DDEAEF;       /* nen the nam - dam hon truoc (#EDF3F5 nhat qua) */
+    --nam-vien:#B8D2DB;      /* vien the nam */
     --nu:#9B4A5E;            /* hong dat - nu */
-    --nu-nen:#F7EEF0;        /* nen the nu */
+    --nu-nen:#F2E2E6;        /* nen the nu - dam hon truoc (#F7EEF0 nhat qua) */
+    --nu-vien:#DDBFC7;       /* vien the nu */
     --r:3px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -108,6 +110,8 @@
   /* ---- Danh sach ---- */
   .dem{font-size:.85rem;color:var(--muc-nhat);margin-bottom:14px}
   /* Chú giải màu — người xem cần biết màu nghĩa là gì */
+  /* Chú giải màu: ẨN trên điện thoại (quá nhỏ để đọc, lại chiếm chỗ),
+     GIỮ trên máy tính (màn hình rộng, vẫn hữu ích). */
   .chu-giai{
     display:flex;gap:13px;flex-wrap:wrap;align-items:center;
     font-size:.76rem;color:var(--muc-nhat);
@@ -117,12 +121,12 @@
   .chu-giai span{display:inline-flex;align-items:center;gap:5px}
   .chu-giai .tach{color:var(--vien)}
   .chu-giai .o{
-    width:13px;height:13px;border-radius:2px;
+    width:15px;height:15px;border-radius:2px;
     border:1px solid var(--vien);display:inline-block;
   }
-  .chu-giai .o.ht-nam{background:var(--nam-nen)}
-  .chu-giai .o.ht-nu {background:var(--nu-nen)}
-  .chu-giai .o.dau-re{background:#fff}
+  .chu-giai .o.ht-nam{background:var(--nam-nen);border-color:var(--nam-vien)}
+  .chu-giai .o.ht-nu {background:var(--nu-nen); border-color:var(--nu-vien)}
+  .chu-giai .o.dau-re{background:#fff;border-color:var(--vien)}
   .chu-giai .vach{
     width:3px;height:14px;border-radius:1px;display:inline-block;
   }
@@ -180,7 +184,12 @@
     padding:11px 13px;transition:all .13s;
     border-left:3px solid var(--vien);
   }
-  .the:hover{border-color:var(--nhan);border-left-color:var(--son);transform:translateX(2px)}
+    .the:hover{
+    border-top-color:var(--nhan);
+    border-right-color:var(--nhan);
+    border-bottom-color:var(--nhan);
+    transform:translateX(2px);
+  }
   .the.tt-con_song{border-left-color:var(--song)}    /* xanh rêu — còn sống */
   .the.tt-chua_ro {border-left-color:var(--nhan)}    /* vàng đồng — chưa rõ */
   .the.tt-da_mat  {border-left-color:var(--vien)}    /* xám nhạt — đã mất */
@@ -188,8 +197,21 @@
   /* Nền thẻ: con cháu HUYẾT THỐNG có nền màu nhạt (nam/nữ khác sắc).
      Dâu/rể để nền TRẮNG — họ không mang dòng máu họ Phạm,
      nên không nên nổi hơn con cháu trong họ. */
-  .the.ht-nam {background:var(--nam-nen)}
-  .the.ht-nu  {background:var(--nu-nen)}
+  /* Vien 3 canh doi mau theo nam/nu.
+     KHONG dung 'border-color' - no de len ca canh TRAI, ma canh trai
+     dang bao con song / da mat (xanh reu / xam). Hai thu se da nhau. */
+  .the.ht-nam {
+    background:var(--nam-nen);
+    border-top-color:var(--nam-vien);
+    border-right-color:var(--nam-vien);
+    border-bottom-color:var(--nam-vien);
+  }
+  .the.ht-nu {
+    background:var(--nu-nen);
+    border-top-color:var(--nu-vien);
+    border-right-color:var(--nu-vien);
+    border-bottom-color:var(--nu-vien);
+  }
   .the.ht-khac{background:var(--giay-dam)}
   .the.dau-re {background:#fff}
   .the-ten{font-weight:600;font-size:.95rem;line-height:1.35}
@@ -569,6 +591,10 @@
   @media(max-width:640px){
     .nhac-gio{ right:10px;left:10px;bottom:10px;width:auto; }
     .ng-ds{max-height:180px}
+
+    /* Ẩn chú giải màu — trên màn hình nhỏ nó quá bé để đọc,
+       lại chiếm chỗ của nội dung chính. */
+    .chu-giai{display:none}
   }
 
 </style>
@@ -585,8 +611,6 @@
       <span><b id="tong-nguoi">—</b> người</span>
       <span>·</span>
       <span><b id="tong-doi">—</b> đời</span>
-      <span>·</span>
-      <span>Thủy tổ: <b id="thuy-to">—</b></span>
     </div>
   </header>
 
@@ -634,8 +658,6 @@
         <span class="lh-tach">·</span>
         <span class="lh-dt-nhan">ĐT (zalo):</span>
         <a href="tel:0913214549" class="lh-dt">0913 214 549</a>
-        <span class="lh-tach">·</span>
-        <span>TP. Hà Nội</span>
       </div>
     </div>
     <div class="chan-duoi">
@@ -799,11 +821,8 @@ Promise.all([
 function khoiDong(){
   const ng = Object.values(DL.nguoi);
   const maxDoi = Math.max(...ng.map(p=>p.doi));
-  const goc = ng.filter(p=>p.doi===1 && p.huyet_thong);
-
   $('#tong-nguoi').textContent = ng.length;
   $('#tong-doi').textContent   = maxDoi;
-  $('#thuy-to').textContent    = goc.length ? goc[0].ten : '—';
 
   // nút lọc theo đời
   const loc = $('#loc');
