@@ -645,7 +645,33 @@
     }
     body.dang-tim .phu-de{display:none}      /* địa danh + số liệu */
     body.dang-tim .goi-y {display:none}      /* "Ví dụ: gõ ha ra Hà" */
-    body.dang-tim .loc   {display:none}      /* 16 nút lọc đời */
+    /* 16 nút lọc đời: ẩn khi lọc "Tất cả".
+       Nhưng nếu ĐANG LỌC MỘT ĐỜI -> phải GIỮ LẠI nút đó.
+       Nếu ẩn hết: người dùng đang lọc Đời 12, gõ tên người đời 14,
+       không ra kết quả, mà không hiểu vì sao. */
+    body.dang-tim .loc{display:none}
+
+    body.dang-tim.co-loc-doi .loc{
+      display:flex;gap:6px;flex-wrap:nowrap;
+      margin-top:6px;
+      align-items:center;
+    }
+    /* Ẩn mọi nút, chỉ chừa nút đang chọn */
+    body.dang-tim.co-loc-doi .loc > button{display:none}
+    body.dang-tim.co-loc-doi .loc > button[aria-pressed="true"]{
+      display:inline-flex;
+    }
+    /* Thêm chữ "Đang tìm trong" phía trước cho rõ */
+    body.dang-tim.co-loc-doi .loc::after{
+      content:'— bấm để bỏ lọc';
+      font-size:.72rem;color:var(--muc-nhat);
+      white-space:nowrap;
+    }
+    body.dang-tim.co-loc-doi .loc::before{
+      content:'Đang tìm trong:';
+      font-size:.76rem;color:var(--muc-nhat);
+      white-space:nowrap;flex-shrink:0;
+    }
     body.dang-tim .chu-giai{display:none}
 
     /* Ô tìm dính lên đỉnh khi cuộn — luôn thấy chữ mình đang gõ */
@@ -879,6 +905,9 @@ Promise.all([
     ANH = a.chan_dung || a || {};
     TL  = a.tu_lieu   || {};
     khoiDong();
+    // Trang mo san o doi 12 -> danh dau ngay, de neu nguoi dung go tim luon
+    // thi van thay nut 'Doi 12' con do.
+    document.body.classList.toggle('co-loc-doi', LOC_DOI !== 0);
     veNhacGio();
   })
   .catch(e=>{
@@ -931,6 +960,7 @@ function veTatCa(){
     [...loc.children].forEach(x => x.setAttribute('aria-pressed', 'false'));
     if(loc.firstElementChild) loc.firstElementChild.setAttribute('aria-pressed','true');
   }
+  document.body.classList.remove('co-loc-doi');
   location.hash = '';           // đang xem một người -> thoát ra danh sách
   ve();
   window.scrollTo(0, 0);
@@ -941,9 +971,24 @@ function nutLoc(nhan, doi){
   b.textContent = nhan;
   b.setAttribute('aria-pressed', doi===LOC_DOI);
   b.onclick = ()=>{
-    LOC_DOI = doi;
+    // DANG TIM + bam vao chinh nut dang chon -> BO LOC, tim toan bo.
+    //
+    // Truoc day: nguoi dung loc Doi 12, go ten nguoi doi 14, khong ra ket qua.
+    // Ho thay nut 'Doi 12' nhung bam vao thi... van la Doi 12. Ket cung.
+    // Gio bam mot cai la thoat ra tim toan bo.
+    const dangTim = document.body.classList.contains('dang-tim');
+    const dangChon = b.getAttribute('aria-pressed') === 'true';
+    const moi = (dangTim && dangChon && doi !== 0) ? 0 : doi;
+
+    LOC_DOI = moi;
     [...$('#loc').children].forEach(x=>x.setAttribute('aria-pressed','false'));
-    b.setAttribute('aria-pressed','true');
+    // Nut duoc sang: nut vua bam, hoac nut 'Tat ca' neu vua bo loc
+    const sang = (moi === 0) ? $('#loc').firstElementChild : b;
+    if(sang) sang.setAttribute('aria-pressed','true');
+
+    // Bao cho body biet dang loc doi nao -> khi TIM KIEM, chi giu lai nut nay,
+    // an 15 nut kia. Nguoi dung van biet minh dang tim TRONG DOI NAO.
+    document.body.classList.toggle('co-loc-doi', moi !== 0);
     ve();
   };
   return b;
