@@ -23,9 +23,15 @@
        Nen the phai RAT NHAT - 166 the ma dam se choi mat.
        Sac tram, hop voi nen giay nga. */
     --nam:#3A6B7C;           /* xanh lam tram - nam */
-    --nam-nen:#EDF3F5;       /* nen the nam */
+    /* Nen nam va nu phai TRONG NHU NHAU ve do dam.
+       Luu y: cung do sang, nhung mau HONG trong dam hon mau XANH -
+       vi sac do tac dong len mat manh hon. Nen phai lam nen nam
+       toi hon mot chut ve so do sang thi nhin moi CAN. */
+    --nam-nen:#D2E3EA;       /* do sang ~223 */
+    --nam-vien:#A8C7D3;
     --nu:#9B4A5E;            /* hong dat - nu */
-    --nu-nen:#F7EEF0;        /* nen the nu */
+    --nu-nen:#F0DFE4;        /* do sang ~229 */
+    --nu-vien:#DBBCC5;
     --r:3px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -51,7 +57,7 @@
     content:'';position:absolute;left:0;right:0;bottom:-6px;
     height:1px;background:var(--muc);
   }
-  .dai-tu{
+  .dai-tu{cursor:pointer;
     font-family:'Noto Serif',serif;font-weight:700;
     font-size:clamp(1.7rem,4.5vw,2.5rem);
     letter-spacing:.02em;line-height:1.25;
@@ -62,6 +68,8 @@
     display:flex;gap:16px;flex-wrap:wrap;align-items:center;
   }
   .phu-de b{color:var(--muc);font-weight:600}
+  /* Dia danh lay mau son do, cung mau voi 'ho PHAM DINH' o tieu de */
+  .phu-de .dia-danh{color:var(--son)}
 
   /* ---- Thanh tim kiem ---- */
   .thanh-tim{
@@ -108,6 +116,8 @@
   /* ---- Danh sach ---- */
   .dem{font-size:.85rem;color:var(--muc-nhat);margin-bottom:14px}
   /* Chú giải màu — người xem cần biết màu nghĩa là gì */
+  /* Chú giải màu: ẨN trên điện thoại (quá nhỏ để đọc, lại chiếm chỗ),
+     GIỮ trên máy tính (màn hình rộng, vẫn hữu ích). */
   .chu-giai{
     display:flex;gap:13px;flex-wrap:wrap;align-items:center;
     font-size:.76rem;color:var(--muc-nhat);
@@ -117,12 +127,12 @@
   .chu-giai span{display:inline-flex;align-items:center;gap:5px}
   .chu-giai .tach{color:var(--vien)}
   .chu-giai .o{
-    width:13px;height:13px;border-radius:2px;
+    width:15px;height:15px;border-radius:2px;
     border:1px solid var(--vien);display:inline-block;
   }
-  .chu-giai .o.ht-nam{background:var(--nam-nen)}
-  .chu-giai .o.ht-nu {background:var(--nu-nen)}
-  .chu-giai .o.dau-re{background:#fff}
+  .chu-giai .o.ht-nam{background:var(--nam-nen);border-color:var(--nam-vien)}
+  .chu-giai .o.ht-nu {background:var(--nu-nen); border-color:var(--nu-vien)}
+  .chu-giai .o.dau-re{background:#fff;border-color:var(--vien)}
   .chu-giai .vach{
     width:3px;height:14px;border-radius:1px;display:inline-block;
   }
@@ -180,7 +190,12 @@
     padding:11px 13px;transition:all .13s;
     border-left:3px solid var(--vien);
   }
-  .the:hover{border-color:var(--nhan);border-left-color:var(--son);transform:translateX(2px)}
+    .the:hover{
+    border-top-color:var(--nhan);
+    border-right-color:var(--nhan);
+    border-bottom-color:var(--nhan);
+    transform:translateX(2px);
+  }
   .the.tt-con_song{border-left-color:var(--song)}    /* xanh rêu — còn sống */
   .the.tt-chua_ro {border-left-color:var(--nhan)}    /* vàng đồng — chưa rõ */
   .the.tt-da_mat  {border-left-color:var(--vien)}    /* xám nhạt — đã mất */
@@ -188,8 +203,21 @@
   /* Nền thẻ: con cháu HUYẾT THỐNG có nền màu nhạt (nam/nữ khác sắc).
      Dâu/rể để nền TRẮNG — họ không mang dòng máu họ Phạm,
      nên không nên nổi hơn con cháu trong họ. */
-  .the.ht-nam {background:var(--nam-nen)}
-  .the.ht-nu  {background:var(--nu-nen)}
+  /* Vien 3 canh doi mau theo nam/nu.
+     KHONG dung 'border-color' - no de len ca canh TRAI, ma canh trai
+     dang bao con song / da mat (xanh reu / xam). Hai thu se da nhau. */
+  .the.ht-nam {
+    background:var(--nam-nen);
+    border-top-color:var(--nam-vien);
+    border-right-color:var(--nam-vien);
+    border-bottom-color:var(--nam-vien);
+  }
+  .the.ht-nu {
+    background:var(--nu-nen);
+    border-top-color:var(--nu-vien);
+    border-right-color:var(--nu-vien);
+    border-bottom-color:var(--nu-vien);
+  }
   .the.ht-khac{background:var(--giay-dam)}
   .the.dau-re {background:#fff}
   .the-ten{font-weight:600;font-size:.95rem;line-height:1.35}
@@ -469,13 +497,7 @@
     font-size:.9rem;color:var(--muc);line-height:1.65;
     margin-bottom:10px;
   }
-  .lh-nguoi{
-    font-size:.92rem;display:flex;gap:9px;flex-wrap:wrap;align-items:center;
-    padding-top:10px;border-top:1px dashed var(--vien);
-  }
-  .lh-nguoi b{font-weight:600}
-  .lh-tach{color:var(--vien)}
-  .lh-dt-nhan{color:var(--muc-nhat)}
+  .lh-moi b{font-weight:600;color:var(--muc)}
 
   /* Dia danh cu - de nguoi trong ho nhan ra que goc */
   .dia-cu{
@@ -484,12 +506,15 @@
     color:var(--muc-nhat);letter-spacing:0;
     margin-top:2px;
   }
+  /* So dien thoai nam GIUA cau van -> phai noi len, khong duoc lan vao chu.
+     Gach chan nhat de nguoi doc biet bam goi duoc. */
   .lh-dt{
-    color:var(--son);text-decoration:none;font-weight:600;
-    border-bottom:1px solid transparent;
+    color:var(--son);text-decoration:none;font-weight:700;
+    border-bottom:1px solid rgba(155,34,38,.32);
     letter-spacing:.01em;
+    white-space:nowrap;
   }
-  .lh-dt:hover{border-color:var(--son)}
+  .lh-dt:hover{border-bottom-color:var(--son)}
 
   .chan-duoi{
     padding-bottom:40px;
@@ -569,6 +594,76 @@
   @media(max-width:640px){
     .nhac-gio{ right:10px;left:10px;bottom:10px;width:auto; }
     .ng-ds{max-height:180px}
+
+    /* Ẩn chú giải màu — trên màn hình nhỏ nó quá bé để đọc,
+       lại chiếm chỗ của nội dung chính. */
+    .chu-giai{display:none}
+  }
+
+  /* ===== HÀNG GIA ĐÌNH =====
+     Mỗi gia đình một hàng: chồng + tất cả vợ nằm cùng hàng.
+     Cụ có 2–4 vợ (cụ Dĩnh đời 11 có 4 bà) vẫn gọn trong một hàng,
+     không lạc sang hàng khác lẫn với gia đình bên cạnh. */
+  .hang-gd{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(215px, 1fr));
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .hang-gd:last-child{margin-bottom:0}
+
+  /* Hàng có vợ/chồng: nối liền bằng một vạch mờ, để thấy đây là một nhà */
+  .hang-gd.co-doi{
+    position:relative;
+    padding-left:9px;
+    border-left:2px solid var(--vien);
+    border-radius:2px;
+  }
+
+  @media(max-width:640px){
+    /* Điện thoại hẹp: cho xuống dòng, nhưng vạch bên trái vẫn giữ
+       nên vẫn nhận ra đây là một gia đình. */
+    .hang-gd{grid-template-columns:1fr}
+  }
+
+  /* ═══ ĐANG TÌM KIẾM (điện thoại) ═══
+     Bàn phím chiếm nửa màn hình. Nếu giữ nguyên tiêu đề lớn + phụ đề +
+     gợi ý + 16 nút lọc đời, kết quả bị đẩy xuống dưới bàn phím —
+     gõ xong không thấy gì.
+
+     Lúc đang gõ thì những thứ đó đều không cần. Thu gọn hết,
+     ô tìm kiếm dính lên đỉnh, kết quả hiện ngay bên dưới.
+     Xóa ô tìm → trả lại như cũ. */
+  @media(max-width:640px){
+    body.dang-tim header{
+      padding-top:8px;padding-bottom:0;
+      margin-bottom:0;border-bottom:none;
+    }
+    body.dang-tim .dai-tu{
+      font-size:1.15rem;margin:0;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    body.dang-tim .phu-de{display:none}      /* địa danh + số liệu */
+    body.dang-tim .goi-y {display:none}      /* "Ví dụ: gõ ha ra Hà" */
+    body.dang-tim .loc   {display:none}      /* 16 nút lọc đời */
+    body.dang-tim .chu-giai{display:none}
+
+    /* Ô tìm dính lên đỉnh khi cuộn — luôn thấy chữ mình đang gõ */
+    body.dang-tim .thanh-tim{
+      position:sticky;top:0;z-index:50;
+      background:var(--giay);
+      padding:6px 0 8px;
+      margin-bottom:0;
+      box-shadow:0 6px 10px -8px rgba(36,30,24,.18);
+    }
+    body.dang-tim .dem{
+      margin:8px 0 10px;
+      font-size:.82rem;
+    }
+    body.dang-tim .doi-nhom{margin-bottom:16px}
+
+    /* Nhắc giỗ che mất kết quả khi bàn phím mở -> ẩn lúc đang tìm */
+    body.dang-tim .nhac-gio{display:none}
   }
 
 </style>
@@ -578,15 +673,13 @@
 <div class="khung">
 
   <header>
-    <div class="dai-tu">Gia phả <span class="ho">họ PHẠM ĐÌNH</span></div>
+    <div class="dai-tu" onclick="veTatCa()" title="Xem toàn bộ">Gia phả <span class="ho">họ PHẠM ĐÌNH</span></div>
     <div class="phu-de">
-      <span>xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ</span>
+      <span class="dia-danh">xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ</span>
       <span>·</span>
       <span><b id="tong-nguoi">—</b> người</span>
       <span>·</span>
       <span><b id="tong-doi">—</b> đời</span>
-      <span>·</span>
-      <span>Thủy tổ: <b id="thuy-to">—</b></span>
     </div>
   </header>
 
@@ -626,16 +719,9 @@
   <footer>
     <div class="lien-he">
       <div class="lh-moi">
-        Gia phả có thể chưa chính xác và chưa đầy đủ. Bà con nào biết thêm về ngày sinh,
-        ngày giỗ, hay các đời còn thiếu, xin liên hệ để cập nhật.
-      </div>
-      <div class="lh-nguoi">
-        <b>Mr. Hùng</b>
-        <span class="lh-tach">·</span>
-        <span class="lh-dt-nhan">ĐT (zalo):</span>
-        <a href="tel:0913214549" class="lh-dt">0913 214 549</a>
-        <span class="lh-tach">·</span>
-        <span>TP. Hà Nội</span>
+        Gia phả hiện còn chưa chính xác và đầy đủ. Bà con nào biết thêm các thông tin
+        năm sinh, ngày giỗ... hay các đời còn thiếu, xin liên hệ <b>Hùng</b> — Số ĐT (zalo):
+        <a href="tel:0913214549" class="lh-dt">0913 214 549</a> để cập nhật hoàn thiện.
       </div>
     </div>
     <div class="chan-duoi">
@@ -760,7 +846,11 @@ function duongSangAm(dd,mm,yy,tz){
 let DL = null;
 let ANH = {};   // chan dung: { id_nguoi: ['ten-file.jpg', ...] }
 let TL  = {};   // tu lieu  : { id_nguoi: [{f:'...-tl1.jpg', so:1}, ...] }
-let LOC_DOI = 0;        // 0 = tất cả
+// Đời mở sẵn khi vào trang. Đời 12 là đời bà con hiện nay dễ nhận ra
+// người quen nhất — vào là thấy ngay, không phải bấm tìm.
+// Đổi số này nếu muốn mở đời khác. Đặt 0 = mở "Tất cả".
+const DOI_MAC_DINH = 12;
+let LOC_DOI = DOI_MAC_DINH;
 let TU_KHOA = '';
 
 const $ = s => document.querySelector(s);
@@ -799,11 +889,8 @@ Promise.all([
 function khoiDong(){
   const ng = Object.values(DL.nguoi);
   const maxDoi = Math.max(...ng.map(p=>p.doi));
-  const goc = ng.filter(p=>p.doi===1 && p.huyet_thong);
-
   $('#tong-nguoi').textContent = ng.length;
   $('#tong-doi').textContent   = maxDoi;
-  $('#thuy-to').textContent    = goc.length ? goc[0].ten : '—';
 
   // nút lọc theo đời
   const loc = $('#loc');
@@ -816,11 +903,37 @@ function khoiDong(){
 
   $('#tim').addEventListener('input', e=>{
     TU_KHOA = boDau(e.target.value.trim());
+
+    // DANG TIM tren dien thoai: ban phim chiem nua man hinh, ket qua bi
+    // day xuong duoi ban phim, khong nhin thay gi.
+    // -> Thu gon phan dau (tieu de, phu de, goi y, 16 nut loc doi).
+    //    Luc dang go thi khong can den chung.
+    //    O tim kiem truot len dinh, ket qua hien ngay ben duoi.
+    // Xoa o tim -> tra lai nhu cu.
+    document.body.classList.toggle('dang-tim', TU_KHOA.length > 0);
+
     ve();
   });
 
+  // Bam ra ngoai o tim (dong ban phim) ma o tim VAN CO CHU -> giu che do thu gon.
+  // Chi tra lai khi XOA HET chu.
+
   window.addEventListener('hashchange', dinhTuyen);
   dinhTuyen();
+}
+
+// Bấm tiêu đề -> về "Tất cả". Đây là thói quen thông thường:
+// tên trang là chỗ người ta bấm để xem toàn bộ.
+function veTatCa(){
+  LOC_DOI = 0;
+  const loc = $('#loc');
+  if(loc){
+    [...loc.children].forEach(x => x.setAttribute('aria-pressed', 'false'));
+    if(loc.firstElementChild) loc.firstElementChild.setAttribute('aria-pressed','true');
+  }
+  location.hash = '';           // đang xem một người -> thoát ra danh sách
+  ve();
+  window.scrollTo(0, 0);
 }
 
 function nutLoc(nhan, doi){
@@ -890,7 +1003,7 @@ function ve(){
 //
 // Người chỉ có ngày/tháng, không có năm mất (vd '23/2') VẪN TÍNH ĐƯỢC —
 // vì giỗ chỉ cần ngày và tháng âm.
-const SO_NGAY_NHAC = 20;
+const SO_NGAY_NHAC = 30;      // doi so nay neu muon nhac som hon / muon hon
 
 function gioSapToi(){
   if(!DL) return [];
@@ -1123,10 +1236,70 @@ function veNhomAnhEm(ds){
           '<span class="cum-dem">'+c.nguoi.length+' người</span>'+
         '</div>';
 
-    return '<div class="cum">'+ tieu +
-             '<div class="luoi">'+ c.nguoi.map(theNguoi).join('') +'</div>'+
-           '</div>';
+    return '<div class="cum">'+ tieu + veHangGiaDinh(c.nguoi) + '</div>';
   }).join('');
+}
+
+// Chia mot cum anh em thanh CAC HANG, MOI GIA DINH MOT HANG.
+//
+// Truoc day tat ca do vao mot luoi 3 cot chay lien tuc, nen:
+//   [Mien] [Le Thi Cuc] [Do]
+//   [Ng.Thi Cat] [Le Thi Mun] [Phiem]     <- hai vo cu Do lac sang hang khac,
+//   [Hoang Thi Tho] ...                       cu Phiem dinh vao vo cu Do
+//
+// Gio: chong + TAT CA vo cung mot hang, khong tran sang hang khac.
+// Cu co 2-4 vo (co that: cu Dinh doi 11 co 4 ba) van gon trong mot hang.
+function veHangGiaDinh(ds){
+  const N = DL.nguoi;
+  const daXep = new Set();
+  const hang = [];
+
+  for(const p of ds){
+    if(daXep.has(p.id)) continue;
+
+    if(p.huyet_thong){
+      // Nguoi trong ho -> lay ca vo/chong cua ho vao CUNG HANG
+      const nhom = [p];
+      daXep.add(p.id);
+      for(const bid of (p.vo_chong || [])){
+        const b = N[bid];
+        if(b && !b.huyet_thong && !daXep.has(bid) && ds.some(x => x.id === bid)){
+          nhom.push(b);
+          daXep.add(bid);
+        }
+      }
+      hang.push(nhom);
+    }else{
+      // Dau/re ma chong/vo o doi khac -> dung rieng mot hang
+      hang.push([p]);
+      daXep.add(p.id);
+    }
+  }
+
+  // Gom NGUOI DOC THAN lien nhau vao CHUNG mot luoi.
+  // Neu de moi nguoi mot hang: 11 nguoi doc than -> 11 hang, moi hang
+  // chi 1 the trong luoi 3 cot -> phi 2/3 khong gian.
+  const ra = [];
+  let dang_gom = [];
+
+  const xa_gom = () => {
+    if(dang_gom.length){
+      ra.push('<div class="hang-gd">'+ dang_gom.map(theNguoi).join('') +'</div>');
+      dang_gom = [];
+    }
+  };
+
+  for(const nhom of hang){
+    if(nhom.length > 1){
+      xa_gom();                     // co vo/chong -> hang RIENG
+      ra.push('<div class="hang-gd co-doi">'+ nhom.map(theNguoi).join('') +'</div>');
+    }else{
+      dang_gom.push(nhom[0]);       // doc than -> gom lai
+    }
+  }
+  xa_gom();
+
+  return ra.join('');
 }
 
 function theNguoi(p){
