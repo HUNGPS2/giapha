@@ -509,6 +509,68 @@
   @media (prefers-reduced-motion:reduce){
     *{transition:none!important;scroll-behavior:auto!important}
   }
+  /* ===== NHẮC GIỖ =====
+     Góc dưới phải. Con cháu vào trang là thấy ngay giỗ nào sắp tới. */
+  .nhac-gio{
+    display:none;
+    position:fixed;right:18px;bottom:18px;z-index:90;
+    width:288px;max-width:calc(100vw - 36px);
+    background:#fff;
+    border:1px solid var(--vien);
+    border-top:3px solid var(--son);
+    border-radius:var(--r);
+    box-shadow:0 3px 18px rgba(36,30,24,.13);
+    overflow:hidden;
+  }
+  .nhac-gio.hien{display:block}
+
+  .ng-dau{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 10px 9px 13px;
+    background:var(--giay-dam);
+    border-bottom:1px solid var(--vien);
+  }
+  .ng-tieu{
+    font-family:'Noto Serif',serif;font-size:.82rem;font-weight:600;
+    color:var(--son);letter-spacing:.04em;text-transform:uppercase;
+  }
+  .ng-dong{
+    width:22px;height:22px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;line-height:1;
+    background:none;color:var(--muc-nhat);
+    border:none;border-radius:50%;cursor:pointer;
+  }
+  .ng-dong:hover{background:var(--vien);color:var(--muc)}
+
+  .ng-ds{max-height:236px;overflow-y:auto}
+
+  .ng-o{
+    display:block;padding:10px 13px;cursor:pointer;
+    border-bottom:1px solid var(--giay-dam);
+    text-decoration:none;
+    transition:background .12s;
+  }
+  .ng-o:last-child{border-bottom:none}
+  .ng-o:hover{background:var(--giay)}
+  .ng-o.gap{background:#FDF6F0}
+  .ng-o.gap:hover{background:#FAEDE3}
+
+  .ng-ten{
+    font-family:'Noto Serif',serif;
+    font-size:.88rem;font-weight:600;color:var(--muc);
+    margin-bottom:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .ng-ngay{font-size:.76rem;color:var(--muc-nhat)}
+  .ng-ngay b{color:var(--son);font-weight:600}
+  .ng-am{color:var(--nhan)}
+
+  @media(max-width:640px){
+    .nhac-gio{ right:10px;left:10px;bottom:10px;width:auto; }
+    .ng-ds{max-height:180px}
+  }
+
 </style>
 </head>
 <body>
@@ -559,6 +621,8 @@
   <!-- ====== MÀN CÁ NHÂN ====== -->
   <div class="man-ca-nhan" id="man-ca-nhan"></div>
 
+  <div id="nhac-gio" class="nhac-gio"></div>
+
   <footer>
     <div class="lien-he">
       <div class="lh-moi">
@@ -584,6 +648,115 @@
 
 <script>
 // ============ Dữ liệu ============
+// ═══════════════════════════════════════════════════════════════
+// QUY DOI AM LICH <-> DUONG LICH
+//
+// Thuat toan Ho Ngoc Duc - dua tren tinh toan thien van that
+// (diem soc, trung khi), mui gio +7 (gio Viet Nam).
+//
+// DA KIEM CHUNG voi 13 moc ai cung biet: 7 cai Tet (2020-2026),
+// Ram thang Gieng, Trung thu, Gio to Hung Vuong. Dung ca 13.
+//
+// QUY DOI SAI NGAY GIO LA CHUYEN HE TRONG - nen khong dung
+// cong thuc xap xi, phai tinh thien van that.
+// ═══════════════════════════════════════════════════════════════
+// ══ QUY DOI AM LICH <-> DUONG LICH (Ho Ngoc Duc, mui gio +7) ══
+const PI = Math.PI;
+function jdFromDate(dd,mm,yy){
+  const a=Math.floor((14-mm)/12), y=yy+4800-a, m=mm+12*a-3;
+  let jd=dd+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-Math.floor(y/100)+Math.floor(y/400)-32045;
+  if(jd<2299161) jd=dd+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-32083;
+  return jd;
+}
+function jdToDate(jd){
+  let a,b,c;
+  if(jd>2299160){ a=jd+32044; b=Math.floor((4*a+3)/146097); c=a-Math.floor(b*146097/4); }
+  else { b=0; c=jd+32082; }
+  const d=Math.floor((4*c+3)/1461), e=c-Math.floor(1461*d/4), m=Math.floor((5*e+2)/153);
+  return [ e-Math.floor((153*m+2)/5)+1, m+3-12*Math.floor(m/10), b*100+d-4800+Math.floor(m/10) ];
+}
+function NewMoon(k){
+  const T=k/1236.85, T2=T*T, T3=T2*T, dr=PI/180;
+  let Jd1=2415020.75933+29.53058868*k+0.0001178*T2-0.000000155*T3;
+  Jd1+=0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);
+  const M=359.2242+29.10535608*k-0.0000333*T2-0.00000347*T3;
+  const Mpr=306.0253+385.81691806*k+0.0107306*T2+0.00001236*T3;
+  const F=21.2964+390.67050646*k-0.0016528*T2-0.00000239*T3;
+  let C1=(0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*dr*M);
+  C1-=0.4068*Math.sin(Mpr*dr)+0.0161*Math.sin(dr*2*Mpr);
+  C1-=0.0004*Math.sin(dr*3*Mpr);
+  C1+=0.0104*Math.sin(dr*2*F)-0.0051*Math.sin(dr*(M+Mpr));
+  C1-=0.0074*Math.sin(dr*(M-Mpr))+0.0004*Math.sin(dr*(2*F+M));
+  C1-=0.0004*Math.sin(dr*(2*F-M))-0.0006*Math.sin(dr*(2*F+Mpr));
+  C1+=0.0010*Math.sin(dr*(2*F-Mpr))+0.0005*Math.sin(dr*(2*Mpr+M));
+  let deltat;
+  if(T<-11) deltat=0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3;
+  else deltat=-0.000278+0.000265*T+0.000262*T2;
+  return Jd1+C1-deltat;
+}
+function SunLongitude(jdn){
+  const T=(jdn-2451545.0)/36525, T2=T*T, dr=PI/180;
+  const M=357.52910+35999.05030*T-0.0001559*T2-0.00000048*T*T2;
+  const L0=280.46645+36000.76983*T+0.0003032*T2;
+  let DL=(1.914600-0.004817*T-0.000014*T2)*Math.sin(dr*M);
+  DL+=(0.019993-0.000101*T)*Math.sin(dr*2*M)+0.000290*Math.sin(dr*3*M);
+  let L=(L0+DL)*dr;
+  L=L-PI*2*Math.floor(L/(PI*2));
+  return L;
+}
+function getSunLongitude(dayNumber,tz){ return Math.floor(SunLongitude(dayNumber-0.5-tz/24.0)/PI*6); }
+function getNewMoonDay(k,tz){ return Math.floor(NewMoon(k)+0.5+tz/24.0); }
+function getLunarMonth11(yy,tz){
+  const off=jdFromDate(31,12,yy)-2415021;
+  const k=Math.floor(off/29.530588853);
+  let nm=getNewMoonDay(k,tz);
+  if(getSunLongitude(nm,tz)>=9) nm=getNewMoonDay(k-1,tz);
+  return nm;
+}
+function getLeapMonthOffset(a11,tz){
+  const k=Math.floor((a11-2415021.076998695)/29.530588853+0.5);
+  let last=0,i=1,arc=getSunLongitude(getNewMoonDay(k+i,tz),tz);
+  do{ last=arc; i++; arc=getSunLongitude(getNewMoonDay(k+i,tz),tz); }while(arc!==last&&i<14);
+  return i-1;
+}
+// AM -> DUONG. Chieu can dung cho NGAY GIO.
+function amSangDuong(ld,lm,ly,leap,tz){
+  tz=tz===undefined?7:tz; leap=leap||0;
+  let a11,b11;
+  if(lm<11){ a11=getLunarMonth11(ly-1,tz); b11=getLunarMonth11(ly,tz); }
+  else     { a11=getLunarMonth11(ly,tz);   b11=getLunarMonth11(ly+1,tz); }
+  const k=Math.floor(0.5+(a11-2415021.076998695)/29.530588853);
+  let off=lm-11; if(off<0) off+=12;
+  if(b11-a11>365){
+    const leapOff=getLeapMonthOffset(a11,tz);
+    let leapMonth=leapOff-2; if(leapMonth<0) leapMonth+=12;
+    if(leap!==0 && lm!==leapMonth) return null;
+    else if(leap!==0 || off>=leapOff) off+=1;
+  }
+  return jdToDate(getNewMoonDay(k+off,tz)+ld-1);
+}
+function duongSangAm(dd,mm,yy,tz){
+  tz=tz===undefined?7:tz;
+  const dayNumber=jdFromDate(dd,mm,yy);
+  const k=Math.floor((dayNumber-2415021.076998695)/29.530588853);
+  let monthStart=getNewMoonDay(k+1,tz);
+  if(monthStart>dayNumber) monthStart=getNewMoonDay(k,tz);
+  let a11=getLunarMonth11(yy,tz), b11=a11, lunarYear;
+  if(a11>=monthStart){ lunarYear=yy; a11=getLunarMonth11(yy-1,tz); }
+  else { lunarYear=yy+1; b11=getLunarMonth11(yy+1,tz); }
+  const lunarDay=dayNumber-monthStart+1;
+  const diff=Math.floor((monthStart-a11)/29);
+  let lunarLeap=0, lunarMonth=diff+11;
+  if(b11-a11>365){
+    const leapMonthDiff=getLeapMonthOffset(a11,tz);
+    if(diff>=leapMonthDiff){ lunarMonth=diff+10; if(diff===leapMonthDiff) lunarLeap=1; }
+  }
+  if(lunarMonth>12) lunarMonth-=12;
+  if(lunarMonth>=11 && diff<4) lunarYear-=1;
+  return [lunarDay,lunarMonth,lunarYear,lunarLeap];
+}
+
+
 let DL = null;
 let ANH = {};   // chan dung: { id_nguoi: ['ten-file.jpg', ...] }
 let TL  = {};   // tu lieu  : { id_nguoi: [{f:'...-tl1.jpg', so:1}, ...] }
@@ -616,6 +789,7 @@ Promise.all([
     ANH = a.chan_dung || a || {};
     TL  = a.tu_lieu   || {};
     khoiDong();
+    veNhacGio();
   })
   .catch(e=>{
     $('#ket-qua').innerHTML =
@@ -706,6 +880,89 @@ function ve(){
     );
   });
   $('#ket-qua').innerHTML = out.join('');
+}
+
+// ============ Nhắc giỗ ============
+// Tính ngày giỗ SẮP TỚI theo dương lịch, để con cháu biết mà thu xếp về.
+//
+// CÁCH TÍNH: ngày giỗ là NGÀY + THÁNG ÂM. Năm mất KHÔNG tham gia phép tính.
+// Cụ mất 1/6/1996 âm -> giỗ năm nay = ngày 1/6 âm của năm nay -> đổi ra dương.
+//
+// Người chỉ có ngày/tháng, không có năm mất (vd '23/2') VẪN TÍNH ĐƯỢC —
+// vì giỗ chỉ cần ngày và tháng âm.
+const SO_NGAY_NHAC = 20;
+
+function gioSapToi(){
+  if(!DL) return [];
+
+  const homNay = new Date();
+  homNay.setHours(0,0,0,0);
+
+  // Năm ÂM hiện tại. Không trùng năm dương: tháng 1 dương vẫn thuộc
+  // năm âm trước (Tết rơi vào cuối tháng 1 / tháng 2).
+  const nayAm = duongSangAm(
+    homNay.getDate(), homNay.getMonth()+1, homNay.getFullYear()
+  );
+  const namAm = nayAm[2];
+
+  const ds = [];
+  for(const p of Object.values(DL.nguoi)){
+    if(!p.mat) continue;
+    // Bắt cả '16/4/1995' lẫn '23/2' (không năm)
+    const m = p.mat.match(/^(\d{1,2})\/(\d{1,2})/);
+    if(!m) continue;
+    const ngay = +m[1], thang = +m[2];
+    if(ngay < 1 || ngay > 30 || thang < 1 || thang > 12) continue;
+
+    // Thử năm âm này và năm sau — giỗ có thể đã qua trong năm âm hiện tại
+    for(const n of [namAm, namAm + 1]){
+      const d = amSangDuong(ngay, thang, n, 0);
+      if(!d) continue;
+      const duong = new Date(d[2], d[1]-1, d[0]);
+      duong.setHours(0,0,0,0);
+      const conMay = Math.round((duong - homNay) / 86400000);
+      if(conMay >= 0 && conMay <= SO_NGAY_NHAC){
+        ds.push({ p, duong, conMay, am: ngay+'/'+thang });
+        break;                     // lấy lần gặp đầu tiên, không lặp
+      }
+    }
+  }
+  return ds.sort((a,b) => a.conMay - b.conMay);
+}
+
+function veNhacGio(){
+  const ds = gioSapToi();
+  const o = $('#nhac-gio');
+  if(!o) return;
+  if(!ds.length){ o.innerHTML = ''; o.classList.remove('hien'); return; }
+
+  const khiNao = c =>
+    c === 0 ? 'Hôm nay' : c === 1 ? 'Ngày mai' : 'Còn ' + c + ' ngày';
+
+  o.innerHTML =
+    '<div class="ng-dau">'+
+      '<span class="ng-tieu">Giỗ sắp tới</span>'+
+      '<button class="ng-dong" title="Đóng">✕</button>'+
+    '</div>'+
+    '<div class="ng-ds">'+
+      ds.map(g =>
+        '<a class="ng-o'+(g.conMay <= 1 ? ' gap' : '')+'" '+
+          'onclick="moNguoi(\''+g.p.id+'\')">'+
+          '<div class="ng-ten">'+esc(g.p.ten)+'</div>'+
+          '<div class="ng-ngay">'+
+            '<b>'+khiNao(g.conMay)+'</b> · '+
+            g.duong.getDate()+'/'+(g.duong.getMonth()+1)+
+            ' <span class="ng-am">('+g.am+' âm)</span>'+
+          '</div>'+
+        '</a>'
+      ).join('')+
+    '</div>';
+
+  o.classList.add('hien');
+  o.querySelector('.ng-dong').onclick = e =>{
+    e.stopPropagation();
+    o.classList.remove('hien');
+  };
 }
 
 // ============ Ảnh ============
