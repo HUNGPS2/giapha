@@ -57,7 +57,7 @@
     content:'';position:absolute;left:0;right:0;bottom:-6px;
     height:1px;background:var(--muc);
   }
-  .dai-tu{
+  .dai-tu{cursor:pointer;
     font-family:'Noto Serif',serif;font-weight:700;
     font-size:clamp(1.7rem,4.5vw,2.5rem);
     letter-spacing:.02em;line-height:1.25;
@@ -607,7 +607,7 @@
 <div class="khung">
 
   <header>
-    <div class="dai-tu">Gia phả <span class="ho">họ PHẠM ĐÌNH</span></div>
+    <div class="dai-tu" onclick="veTatCa()" title="Xem toàn bộ">Gia phả <span class="ho">họ PHẠM ĐÌNH</span></div>
     <div class="phu-de">
       <span class="dia-danh">xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ</span>
       <span>·</span>
@@ -653,8 +653,8 @@
   <footer>
     <div class="lien-he">
       <div class="lh-moi">
-        Gia phả có thể chưa chính xác và chưa đầy đủ. Bà con nào biết thêm về ngày sinh,
-        ngày giỗ, hay các đời còn thiếu, xin liên hệ <b>Hùng</b> — ĐT (zalo):
+        Gia phả có thể chưa chính xác và đủ. Bà con nào biết thêm về năm sinh,
+        ngày giỗ... hay các đời còn thiếu, xin liên hệ <b>Hùng</b> — Số ĐT (zalo):
         <a href="tel:0913214549" class="lh-dt">0913 214 549</a> để cập nhật.
       </div>
     </div>
@@ -780,7 +780,11 @@ function duongSangAm(dd,mm,yy,tz){
 let DL = null;
 let ANH = {};   // chan dung: { id_nguoi: ['ten-file.jpg', ...] }
 let TL  = {};   // tu lieu  : { id_nguoi: [{f:'...-tl1.jpg', so:1}, ...] }
-let LOC_DOI = 0;        // 0 = tất cả
+// Đời mở sẵn khi vào trang. Đời 12 là đời bà con hiện nay dễ nhận ra
+// người quen nhất — vào là thấy ngay, không phải bấm tìm.
+// Đổi số này nếu muốn mở đời khác. Đặt 0 = mở "Tất cả".
+const DOI_MAC_DINH = 12;
+let LOC_DOI = DOI_MAC_DINH;
 let TU_KHOA = '';
 
 const $ = s => document.querySelector(s);
@@ -838,6 +842,20 @@ function khoiDong(){
 
   window.addEventListener('hashchange', dinhTuyen);
   dinhTuyen();
+}
+
+// Bấm tiêu đề -> về "Tất cả". Đây là thói quen thông thường:
+// tên trang là chỗ người ta bấm để xem toàn bộ.
+function veTatCa(){
+  LOC_DOI = 0;
+  const loc = $('#loc');
+  if(loc){
+    [...loc.children].forEach(x => x.setAttribute('aria-pressed', 'false'));
+    if(loc.firstElementChild) loc.firstElementChild.setAttribute('aria-pressed','true');
+  }
+  location.hash = '';           // đang xem một người -> thoát ra danh sách
+  ve();
+  window.scrollTo(0, 0);
 }
 
 function nutLoc(nhan, doi){
@@ -907,7 +925,7 @@ function ve(){
 //
 // Người chỉ có ngày/tháng, không có năm mất (vd '23/2') VẪN TÍNH ĐƯỢC —
 // vì giỗ chỉ cần ngày và tháng âm.
-const SO_NGAY_NHAC = 20;
+const SO_NGAY_NHAC = 30;      // doi so nay neu muon nhac som hon / muon hon
 
 function gioSapToi(){
   if(!DL) return [];
