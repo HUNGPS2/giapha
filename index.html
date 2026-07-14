@@ -497,13 +497,7 @@
     font-size:.9rem;color:var(--muc);line-height:1.65;
     margin-bottom:10px;
   }
-  .lh-nguoi{
-    font-size:.92rem;display:flex;gap:9px;flex-wrap:wrap;align-items:center;
-    padding-top:10px;border-top:1px dashed var(--vien);
-  }
-  .lh-nguoi b{font-weight:600}
-  .lh-tach{color:var(--vien)}
-  .lh-dt-nhan{color:var(--muc-nhat)}
+  .lh-moi b{font-weight:600;color:var(--muc)}
 
   /* Dia danh cu - de nguoi trong ho nhan ra que goc */
   .dia-cu{
@@ -512,12 +506,15 @@
     color:var(--muc-nhat);letter-spacing:0;
     margin-top:2px;
   }
+  /* So dien thoai nam GIUA cau van -> phai noi len, khong duoc lan vao chu.
+     Gach chan nhat de nguoi doc biet bam goi duoc. */
   .lh-dt{
-    color:var(--son);text-decoration:none;font-weight:600;
-    border-bottom:1px solid transparent;
+    color:var(--son);text-decoration:none;font-weight:700;
+    border-bottom:1px solid rgba(155,34,38,.32);
     letter-spacing:.01em;
+    white-space:nowrap;
   }
-  .lh-dt:hover{border-color:var(--son)}
+  .lh-dt:hover{border-bottom-color:var(--son)}
 
   .chan-duoi{
     padding-bottom:40px;
@@ -657,13 +654,8 @@
     <div class="lien-he">
       <div class="lh-moi">
         Gia phả có thể chưa chính xác và chưa đầy đủ. Bà con nào biết thêm về ngày sinh,
-        ngày giỗ, hay các đời còn thiếu, xin liên hệ để cập nhật.
-      </div>
-      <div class="lh-nguoi">
-        <b>Mr. Hùng</b>
-        <span class="lh-tach">·</span>
-        <span class="lh-dt-nhan">ĐT (zalo):</span>
-        <a href="tel:0913214549" class="lh-dt">0913 214 549</a>
+        ngày giỗ, hay các đời còn thiếu, xin liên hệ <b>Hùng</b> — ĐT (zalo):
+        <a href="tel:0913214549" class="lh-dt">0913 214 549</a> để cập nhật.
       </div>
     </div>
     <div class="chan-duoi">
