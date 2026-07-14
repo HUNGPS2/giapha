@@ -23,11 +23,15 @@
        Nen the phai RAT NHAT - 166 the ma dam se choi mat.
        Sac tram, hop voi nen giay nga. */
     --nam:#3A6B7C;           /* xanh lam tram - nam */
-    --nam-nen:#DDEAEF;       /* nen the nam - dam hon truoc (#EDF3F5 nhat qua) */
-    --nam-vien:#B8D2DB;      /* vien the nam */
+    /* Nen nam va nu phai TRONG NHU NHAU ve do dam.
+       Luu y: cung do sang, nhung mau HONG trong dam hon mau XANH -
+       vi sac do tac dong len mat manh hon. Nen phai lam nen nam
+       toi hon mot chut ve so do sang thi nhin moi CAN. */
+    --nam-nen:#D2E3EA;       /* do sang ~223 */
+    --nam-vien:#A8C7D3;
     --nu:#9B4A5E;            /* hong dat - nu */
-    --nu-nen:#F2E2E6;        /* nen the nu - dam hon truoc (#F7EEF0 nhat qua) */
-    --nu-vien:#DDBFC7;       /* vien the nu */
+    --nu-nen:#F0DFE4;        /* do sang ~229 */
+    --nu-vien:#DBBCC5;
     --r:3px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -64,6 +68,8 @@
     display:flex;gap:16px;flex-wrap:wrap;align-items:center;
   }
   .phu-de b{color:var(--muc);font-weight:600}
+  /* Dia danh lay mau son do, cung mau voi 'ho PHAM DINH' o tieu de */
+  .phu-de .dia-danh{color:var(--son)}
 
   /* ---- Thanh tim kiem ---- */
   .thanh-tim{
@@ -606,7 +612,7 @@
   <header>
     <div class="dai-tu">Gia phả <span class="ho">họ PHẠM ĐÌNH</span></div>
     <div class="phu-de">
-      <span>xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ</span>
+      <span class="dia-danh">xã Cẩm Chế, huyện Thanh Hà, tỉnh Hải Dương cũ</span>
       <span>·</span>
       <span><b id="tong-nguoi">—</b> người</span>
       <span>·</span>
