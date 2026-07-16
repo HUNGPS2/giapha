@@ -802,11 +802,21 @@
   }
   .sd-chau-doc .sd-o{width:118px}
 
-  /* Mũi tên trên người con có cháu - to, ro de thay bam duoc */
+  /* Mũi tên trên người con có cháu -> NÚT bấm riêng.
+     Bấm mũi tên = xổ/thu cháu. Bấm phần tên = làm trung tâm.
+     Nền tròn + vùng bấm rộng để ngón tay dễ trúng. */
   .sd-mui-ten{
-    text-align:center;font-size:1.15rem;color:var(--son);
-    margin-top:3px;opacity:.8;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center;
+    width:28px;height:28px;margin:4px auto 0;
+    font-size:1rem;line-height:1;
+    color:#fff;background:var(--son);
+    border-radius:50%;
+    box-shadow:0 1px 4px rgba(155,34,38,.3);
+    cursor:pointer;
+    transition:transform .12s, box-shadow .12s;
   }
+  .sd-o .sd-mui-ten{margin-left:auto;margin-right:auto}
+  .sd-mui-ten:hover{transform:scale(1.12);box-shadow:0 2px 7px rgba(155,34,38,.4)}
   .sd-o.co-chau{cursor:pointer}
   .sd-o.dang-xo{
     border-color:var(--son);
@@ -1965,7 +1975,7 @@ function veSoDo(){
     '</div>'+
     '<div class="sd-khung" id="sd-khung">'+ html +'</div>'+
     '<div class="sd-huong-dan">Bấm một người để chuyển sang họ · '+
-      'Bấm lâu để xem đầy đủ · Kéo để di chuyển</div>';
+      'Bấm nút ▼ để xem cháu · Bấm lâu để xem đầy đủ · Kéo để di chuyển</div>';
 
   ganSuKienSoDo();
   apDungBienDoi();
@@ -1981,24 +1991,26 @@ function ganSuKienSoDo(){
   cay.querySelectorAll('.sd-o').forEach(o=>{
     const id = o.dataset.id;
 
-    o.addEventListener('pointerdown', ()=>{
+    o.addEventListener('pointerdown', e=>{
       daGiu = false;
+      // Bấm-giữ trên mũi tên KHÔNG mở trang (mũi tên chỉ để xổ cháu)
+      if(e.target.closest('.sd-mui-ten')) return;
       timer = setTimeout(()=>{ daGiu = true; location.hash = id; dongSoDo(); }, 500);
     });
-    o.addEventListener('pointerup', ()=>{
+    o.addEventListener('pointerup', e=>{
       clearTimeout(timer);
       if(daGiu) return;                 // đã mở trang -> thôi
-      if(id === SODO_TAM) return;       // bấm chính tâm -> không làm gì
 
-      // Bấm người CON có con: xổ / thu cột cháu dọc (KHÔNG chuyển tâm).
-      // Bấm lần nữa vào chính người đó -> thu lại.
-      if(o.classList.contains('co-chau')){
+      // Bấm vào MŨI TÊN ▼ -> xổ/thu cột cháu dọc (không chuyển tâm).
+      // Bấm vào phần còn lại của ô (tên) -> làm trung tâm.
+      if(e.target.closest('.sd-mui-ten')){
         SODO_XO_CHAU = (SODO_XO_CHAU === id) ? null : id;
         veSoDo();
         return;
       }
 
-      SODO_TAM = id;                    // người khác -> chuyển tâm
+      if(id === SODO_TAM) return;       // bấm chính tâm -> không làm gì
+      SODO_TAM = id;                    // -> chuyển tâm sang người vừa bấm
       SODO_XO_CHAU = null;
       SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
       veSoDo();
