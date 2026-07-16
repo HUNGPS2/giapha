@@ -1790,7 +1790,7 @@ function veCaNhan(p){
       '<div class="khoi-tieu">Thân thế</div>'+
       hang(p.trang_thai === 'da_mat' ? 'Ngày sinh' : 'Năm sinh',
            p.sinh ? esc(p.sinh)+' <span class="duong-lich">dương lịch</span>' : '')+
-      hang('Nơi sinh', p.noi_sinh ? esc(p.noi_sinh) : '')+
+      hang('Nơi lập nghiệp', p.lap_nghiep ? esc(p.lap_nghiep) : '')+
       hangMat(p)+
       (p.mo ? hang('Mộ phần', '<span class="mo-phan">'+esc(p.mo)+'</span>') : '')+
     '</div>'+
