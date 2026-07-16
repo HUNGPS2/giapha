@@ -755,10 +755,16 @@
   .sd-o.o-nam {background:var(--nam-nen); border-color:var(--nam-vien)}
   .sd-o.o-nu  {background:var(--nu-nen);  border-color:var(--nu-vien)}
   .sd-o.o-daure{background:#fff}
+  /* Node trung tam - nguoi dang xem. Phai noi bat de nhan ra ngay
+     giua nhung nguoi xung quanh. Nen vang nhat, vien son do dam, to hon. */
   .sd-o.tam{
     border-width:2px;border-color:var(--son);
-    box-shadow:0 3px 12px rgba(155,34,38,.18);
+    background:#FBF3E2;
+    box-shadow:0 3px 14px rgba(155,34,38,.22);
+    transform:scale(1.06);
   }
+  .sd-o.tam .sd-ten{color:var(--son);font-size:.86rem}
+  .sd-o.tam:hover{transform:scale(1.06) translateY(-1px)}
   .sd-ten{
     font-family:'Noto Serif',serif;
     font-size:.82rem;font-weight:600;color:var(--muc);
@@ -777,6 +783,36 @@
     .sd-ten{font-size:.76rem}
     .sd-hang{gap:8px}
     .sd-huong-dan{font-size:.68rem}
+  }
+
+  /* ═══ CỘT CHÁU XỔ DỌC ═══
+     Bấm một người con có con -> cháu của RIÊNG người đó xổ dọc xuống.
+     Xếp chồng theo chiều đứng (tận dụng chỗ trống dưới màn hình),
+     không dàn ngang -> không bao giờ tràn. */
+  .sd-con-co-chau{
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .sd-noi-doc-nho{
+    width:2px;height:12px;background:var(--vien);
+  }
+  .sd-chau-doc{
+    display:flex;flex-direction:column;gap:6px;
+    padding:8px 8px 10px;
+    background:rgba(155,34,38,.035);
+    border:1px dashed var(--nam-vien);
+    border-radius:var(--r);
+  }
+  .sd-chau-doc .sd-o{width:118px}
+
+  /* Mũi tên nhỏ trên người con có cháu */
+  .sd-mui-ten{
+    text-align:center;font-size:.62rem;color:var(--son);
+    margin-top:3px;opacity:.65;line-height:1;
+  }
+  .sd-o.co-chau{cursor:pointer}
+  .sd-o.dang-xo{
+    border-color:var(--son);
+    box-shadow:0 2px 8px rgba(155,34,38,.15);
   }
 
 </style>
@@ -1746,12 +1782,14 @@ function veCaNhan(p){
 // ═══════════════════════════════════════════════════════════════════
 
 let SODO_TAM = null;      // id người đang làm tâm
+let SODO_XO_CHAU = null;  // id người CON đang được xổ cháu xuống (dọc)
 let SODO_ZOOM = 1;
 let SODO_DX = 0, SODO_DY = 0;
 
 function moSoDo(id){
   SODO_TAM = id || timTam();
   if(!SODO_TAM){ return; }
+  SODO_XO_CHAU = null;
   SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
   document.body.classList.add('xem-sodo');
   veSoDo();
@@ -1782,12 +1820,16 @@ function lopO(p){
 }
 
 // Vẽ một ô người. tam=true -> ô trung tâm (to hơn, viền đậm).
-function oNguoi(p, tam){
+function oNguoi(p, tam, coChau, dangXo){
   const ngay = nhanNgay(p);
   return (
-    '<div class="sd-o '+lopO(p)+(tam ? ' tam' : '')+'" data-id="'+p.id+'">'+
+    '<div class="sd-o '+lopO(p)+(tam ? ' tam' : '')+
+        (coChau ? ' co-chau' : '')+(dangXo ? ' dang-xo' : '')+
+        '" data-id="'+p.id+'">'+
       '<div class="sd-ten">'+esc(p.ten)+'</div>'+
       (ngay ? '<div class="sd-ngay">'+ngay+'</div>' : '')+
+      // Nguoi con co con -> hien mui ten nho, bam de xo/thu cot chau doc
+      (coChau ? '<div class="sd-mui-ten">'+(dangXo ? '▲' : '▼')+'</div>' : '')+
     '</div>'
   );
 }
@@ -1845,7 +1887,25 @@ function veSoDo(){
   if(con.length){
     html += '<div class="sd-noi-doc"></div>';
     html += '<div class="sd-hang sd-duoi">';
-    html += con.map(p => oNguoi(p, false)).join('');
+    // Moi nguoi con: neu co con (chau cua tam) -> them dau hieu bam xo duoc.
+    // Neu dang xo chau cua chinh nguoi con nay -> ve cot chau DOC ben duoi.
+    html += con.map(p => {
+      const coChau = (p.con || []).length > 0;
+      const dangXo = (p.id === SODO_XO_CHAU);
+      let o = oNguoi(p, false, coChau, dangXo);
+      if(dangXo){
+        // Cot chau xo doc ngay duoi nguoi con nay
+        const chau = (p.con || []).map(x => N[x]).filter(Boolean)
+                     .sort((a,b) => (a.thu_tu||0) - (b.thu_tu||0));
+        o = '<div class="sd-con-co-chau">' + o +
+              '<div class="sd-noi-doc-nho"></div>' +
+              '<div class="sd-chau-doc">' +
+                chau.map(c => oNguoi(c, false)).join('') +
+              '</div>' +
+            '</div>';
+      }
+      return o;
+    }).join('');
     html += '</div>';
   }
 
@@ -1889,7 +1949,17 @@ function ganSuKienSoDo(){
       clearTimeout(timer);
       if(daGiu) return;                 // đã mở trang -> thôi
       if(id === SODO_TAM) return;       // bấm chính tâm -> không làm gì
-      SODO_TAM = id;                    // chuyển tâm sang người vừa bấm
+
+      // Bấm người CON có con: xổ / thu cột cháu dọc (KHÔNG chuyển tâm).
+      // Bấm lần nữa vào chính người đó -> thu lại.
+      if(o.classList.contains('co-chau')){
+        SODO_XO_CHAU = (SODO_XO_CHAU === id) ? null : id;
+        veSoDo();
+        return;
+      }
+
+      SODO_TAM = id;                    // người khác -> chuyển tâm
+      SODO_XO_CHAU = null;
       SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
       veSoDo();
     });
