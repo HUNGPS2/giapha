@@ -802,10 +802,10 @@
   }
   .sd-chau-doc .sd-o{width:118px}
 
-  /* Mũi tên nhỏ trên người con có cháu */
+  /* Mũi tên trên người con có cháu - to, ro de thay bam duoc */
   .sd-mui-ten{
-    text-align:center;font-size:.62rem;color:var(--son);
-    margin-top:3px;opacity:.65;line-height:1;
+    text-align:center;font-size:1.15rem;color:var(--son);
+    margin-top:3px;opacity:.8;line-height:1;
   }
   .sd-o.co-chau{cursor:pointer}
   .sd-o.dang-xo{
@@ -823,6 +823,13 @@
     background:rgba(155,34,38,.045);
     border:1px dashed var(--son);
     border-radius:var(--r);
+  }
+
+  /* Tầng ông bà - đời xa nhất trên cùng. Ô hơi nhỏ và nhạt hơn,
+     để mắt tập trung vào người đang xem ở giữa. */
+  .sd-ong-ba .sd-o{
+    opacity:.82;
+    transform:scale(.94);
   }
 
 </style>
@@ -1853,6 +1860,14 @@ function veSoDo(){
   const cha = tam.cha ? N[tam.cha] : null;
   const me  = tam.me  ? N[tam.me]  : null;
 
+  // Tầng ông bà = cha mẹ của người bố huyết thống.
+  // Nếu tâm là con của rể (bố không thuộc họ), lần theo mẹ.
+  const boHuyet = (cha && cha.huyet_thong) ? cha
+                : (me && me.huyet_thong)   ? me
+                : cha || me;
+  const ong = (boHuyet && boHuyet.cha) ? N[boHuyet.cha] : null;
+  const ba  = (boHuyet && boHuyet.me)  ? N[boHuyet.me]  : null;
+
   // Tầng giữa: tâm + anh em ruột + vợ/chồng của tâm.
   // Anh em xếp theo thứ tự gia phả; chèn vợ/chồng ngay cạnh tâm.
   const anhEm = (tam.anh_em || []).map(x => N[x]).filter(Boolean)
@@ -1870,6 +1885,15 @@ function veSoDo(){
 
   // ── Dựng HTML ba hàng ──
   let html = '<div class="sd-cay" id="sd-cay">';
+
+  // Tầng ông bà (trên cùng)
+  if(ong || ba){
+    html += '<div class="sd-hang sd-ong-ba">';
+    if(ong) html += oNguoi(ong, false);
+    if(ba)  html += oNguoi(ba, false);
+    html += '</div>';
+    html += '<div class="sd-noi-doc"></div>';
+  }
 
   // Tầng cha mẹ
   if(cha || me){
