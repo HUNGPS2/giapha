@@ -760,11 +760,9 @@
   .sd-o.tam{
     border-width:2px;border-color:var(--son);
     background:#FBF3E2;
-    box-shadow:0 3px 14px rgba(155,34,38,.22);
-    transform:scale(1.06);
+    box-shadow:0 2px 10px rgba(155,34,38,.2);
   }
   .sd-o.tam .sd-ten{color:var(--son);font-size:.86rem}
-  .sd-o.tam:hover{transform:scale(1.06) translateY(-1px)}
   .sd-ten{
     font-family:'Noto Serif',serif;
     font-size:.82rem;font-weight:600;color:var(--muc);
@@ -813,6 +811,18 @@
   .sd-o.dang-xo{
     border-color:var(--son);
     box-shadow:0 2px 8px rgba(155,34,38,.15);
+  }
+
+  /* ═══ KHUNG CẶP VỢ CHỒNG Ở TÂM ═══
+     Người đang xem + vợ/chồng của họ, bọc chung một khung nét đứt son đỏ
+     -> thấy ngay đây là một cặp, không lẫn với anh em bên cạnh.
+     Cùng kiểu với khung bao cháu, để nhất quán. */
+  .sd-cap-tam{
+    display:flex;gap:8px;align-items:flex-start;
+    padding:8px;
+    background:rgba(155,34,38,.045);
+    border:1px dashed var(--son);
+    border-radius:var(--r);
   }
 
 </style>
@@ -1845,20 +1855,12 @@ function veSoDo(){
 
   // Tầng giữa: tâm + anh em ruột + vợ/chồng của tâm.
   // Anh em xếp theo thứ tự gia phả; chèn vợ/chồng ngay cạnh tâm.
-  const giua = [];
   const anhEm = (tam.anh_em || []).map(x => N[x]).filter(Boolean)
                 .sort((a,b) => (a.thu_tu||0) - (b.thu_tu||0));
-  // tâm + anh em, giữ tâm ở giữa cụm cho dễ thấy
+  // tâm + anh em, giữ đúng thứ tự gia phả
   const huyetGiua = [tam, ...anhEm].sort((a,b) => (a.thu_tu||0) - (b.thu_tu||0));
-  for(const p of huyetGiua){
-    giua.push(p);
-    if(p.id === tam.id){
-      for(const vid of (tam.vo_chong || [])){
-        const v = N[vid];
-        if(v) giua.push(v);
-      }
-    }
-  }
+  // vợ/chồng của tâm
+  const banDoi = (tam.vo_chong || []).map(x => N[x]).filter(Boolean);
 
   // Tầng dưới: con của tâm (với vợ/chồng nào cũng gộp).
   const con = (tam.con || []).map(x => N[x]).filter(Boolean)
@@ -1878,9 +1880,20 @@ function veSoDo(){
     html += '<div class="sd-noi-doc"></div>';
   }
 
-  // Tầng giữa
+  // Tầng giữa: mỗi người theo thứ tự. Đến lượt TÂM thì bọc tâm + vợ/chồng
+  // vào MỘT KHUNG (nét đứt son đỏ) để thấy rõ đây là một cặp vợ chồng —
+  // giống khung bao cháu ở dưới.
   html += '<div class="sd-hang sd-giua">';
-  html += giua.map(p => oNguoi(p, p.id === tam.id)).join('');
+  for(const p of huyetGiua){
+    if(p.id === tam.id){
+      html += '<div class="sd-cap-tam">';
+      html += oNguoi(tam, true);
+      html += banDoi.map(v => oNguoi(v, false)).join('');
+      html += '</div>';
+    }else{
+      html += oNguoi(p, false);
+    }
+  }
   html += '</div>';
 
   // Tầng con
