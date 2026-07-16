@@ -114,7 +114,14 @@
   }
 
   /* ---- Danh sach ---- */
-  .dem{font-size:.85rem;color:var(--muc-nhat);margin-bottom:14px}
+  .dem{font-size:.85rem;color:var(--muc-nhat);margin-bottom:14px;
+       display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+  /* Nút xem sơ đồ cây cạnh dòng đếm - cùng màu son đỏ với nút chân trang */
+  .dem-sodo{
+    color:var(--son);text-decoration:none;font-weight:600;
+    border-bottom:1px solid transparent;
+  }
+  .dem-sodo:hover{border-bottom-color:var(--son)}
   /* Chú giải màu — người xem cần biết màu nghĩa là gì */
   /* Chú giải màu: ẨN trên điện thoại (quá nhỏ để đọc, lại chiếm chỗ),
      GIỮ trên máy tính (màn hình rộng, vẫn hữu ích). */
@@ -1166,9 +1173,15 @@ function ve(){
     return;
   }
 
-  dem.textContent = TU_KHOA
+  const chu = TU_KHOA
     ? 'Tìm thấy '+kq.length+' người'
     : (LOC_DOI ? kq.length+' người ở đời '+LOC_DOI : 'Toàn bộ '+kq.length+' người, xếp theo đời');
+  // Khi đang lọc MỘT đời (không phải tìm kiếm): thêm nút xem sơ đồ cây,
+  // mở ở người đầu đời đó -> nhất quán với nút ở chân trang.
+  dem.innerHTML = '<span>'+chu+'</span>'+
+    ((LOC_DOI && !TU_KHOA)
+      ? ' <a href="#" class="dem-sodo" onclick="soDoDauDoi('+LOC_DOI+');return false;">Xem sơ đồ cây →</a>'
+      : '');
 
   // nhóm theo đời
   const nhom = {};
@@ -2074,6 +2087,21 @@ function sodoVe(){
 // không cắm cứng mã người — nên đổi tên trên MyHeritage cũng
 // không làm hỏng.
 const TEN_TAM = 'PHẠM ĐÌNH QUỲNH';
+
+// Mở sơ đồ cây ở NGƯỜI ĐẦU của một đời — người huyết thống đầu tiên
+// theo thứ tự chi (giống cách danh sách sắp xếp).
+function soDoDauDoi(doi){
+  const sapChi = (a,b)=>{
+    const ka=(a.khoa_sap||[]).join(','), kb=(b.khoa_sap||[]).join(',');
+    return ka<kb ? -1 : ka>kb ? 1 : (a.thu_tu||0)-(b.thu_tu||0);
+  };
+  const trongHo = Object.values(DL.nguoi).filter(p => p.doi === doi && p.huyet_thong);
+  // Ưu tiên NAM GIỚI đầu đời — cây gia phả nối dõi theo dòng nam.
+  // Không có nam thì lấy người đầu đời (nữ) để không bỏ trống.
+  const nam = trongHo.filter(p => p.gioi === 'M').sort(sapChi);
+  const ds  = nam.length ? nam : trongHo.sort(sapChi);
+  if(ds.length) moSoDo(ds[0].id);
+}
 
 function timTam(){
   if(!DL) return null;
