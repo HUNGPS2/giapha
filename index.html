@@ -772,7 +772,7 @@
 
   .sd-huong-dan{
     flex-shrink:0;text-align:center;
-    padding:8px;font-size:.74rem;color:var(--muc-nhat);
+    padding:8px;font-size:.74rem;color:var(--nhan);   /* nâu nhũ vàng đồng - đồng bộ sơ đồ */
     background:#fff;border-top:1px solid var(--vien);
   }
 
@@ -1974,8 +1974,11 @@ function veSoDo(){
       '</div>'+
     '</div>'+
     '<div class="sd-khung" id="sd-khung">'+ html +'</div>'+
-    '<div class="sd-huong-dan">Bấm một người để chuyển sang họ · '+
-      'Bấm nút ▼ để xem cháu · Bấm lâu để xem đầy đủ · Kéo để di chuyển</div>';
+    '<div class="sd-huong-dan">'+
+      'Bấm lên người đó để chuyển người đó là trung tâm · '+
+      'Bấm nút ▼ để xem hàng cháu · '+
+      'Bấm giữ để xem lại thông tin đầy đủ · '+
+      'Kéo để di chuyển</div>';
 
   ganSuKienSoDo();
   apDungBienDoi();
