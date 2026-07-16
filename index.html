@@ -819,10 +819,14 @@
      Cùng kiểu với khung bao cháu, để nhất quán. */
   .sd-cap-tam{
     display:flex;gap:8px;align-items:flex-start;
-    padding:8px;
-    background:rgba(155,34,38,.045);
-    border:1px dashed var(--son);
-    border-radius:var(--r);
+    padding:10px;
+    background:rgba(155,34,38,.06);
+    /* Nét ĐÔI (double) son đỏ, dày - kiểu khung trang trọng, đóng khung
+       thật sự. Đây là trung tâm, người xem cần thấy ngay mình đứng ở đâu.
+       (CSS không có nét đôi đứt; nét đôi liền nổi hơn nét đứt đơn nhiều.) */
+    border:4px double var(--son);
+    border-radius:6px;
+    box-shadow:0 2px 12px rgba(155,34,38,.15);
   }
 
   /* Tầng ông bà - đời xa nhất trên cùng. Ô hơi nhỏ và nhạt hơn,
