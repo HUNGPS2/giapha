@@ -806,8 +806,9 @@
      Bấm mũi tên = xổ/thu cháu. Bấm phần tên = làm trung tâm.
      Nền tròn + vùng bấm rộng để ngón tay dễ trúng. */
   .sd-mui-ten{
-    display:inline-flex;align-items:center;justify-content:center;
-    width:28px;height:28px;margin:4px auto 0;
+    display:flex;align-items:center;justify-content:center;
+    width:28px;height:28px;
+    margin:5px auto 0;              /* auto hai bên -> vào giữa ô */
     font-size:1rem;line-height:1;
     color:#fff;background:var(--son);
     border-radius:50%;
@@ -815,7 +816,6 @@
     cursor:pointer;
     transition:transform .12s, box-shadow .12s;
   }
-  .sd-o .sd-mui-ten{margin-left:auto;margin-right:auto}
   .sd-mui-ten:hover{transform:scale(1.12);box-shadow:0 2px 7px rgba(155,34,38,.4)}
   .sd-o.co-chau{cursor:pointer}
   .sd-o.dang-xo{
