@@ -692,6 +692,93 @@
     body.dang-tim .nhac-gio{display:none}
   }
 
+  /* ═══ SƠ ĐỒ CÂY 3 TẦNG ═══ */
+  .sodo{display:none}
+  body.xem-sodo{overflow:hidden}
+  body.xem-sodo .sodo{
+    display:flex;flex-direction:column;
+    position:fixed;inset:0;z-index:150;
+    background:var(--giay);
+  }
+
+  .sd-thanh{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 14px;
+    background:#fff;border-bottom:1px solid var(--vien);
+    flex-shrink:0;
+  }
+  .sd-tieu{flex:1;font-size:.92rem;color:var(--muc);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sd-tieu b{font-family:'Noto Serif',serif;color:var(--son)}
+  .sd-zoom{display:flex;gap:6px}
+  .sd-nut{
+    width:34px;height:34px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.05rem;line-height:1;
+    background:#fff;color:var(--muc);
+    border:1px solid var(--vien);border-radius:var(--r);
+    cursor:pointer;transition:background .12s;
+  }
+  .sd-nut:hover{background:var(--giay-dam)}
+
+  .sd-khung{
+    flex:1;overflow:hidden;position:relative;
+    touch-action:none;cursor:grab;
+  }
+  .sd-khung:active{cursor:grabbing}
+
+  .sd-cay{
+    position:absolute;top:24px;left:50%;
+    transform-origin:top center;
+    display:flex;flex-direction:column;align-items:center;gap:0;
+    padding:20px 40px 60px;
+    /* dịch về giữa theo bề ngang chính nó */
+    translate:-50%;
+  }
+
+  .sd-hang{
+    display:flex;gap:12px;justify-content:center;align-items:flex-start;
+    flex-wrap:nowrap;
+  }
+  .sd-noi-doc{width:2px;height:26px;background:var(--nhan);margin:0 auto}
+
+  .sd-o{
+    width:130px;flex-shrink:0;
+    padding:9px 10px;
+    background:#fff;
+    border:1px solid var(--vien);border-radius:var(--r);
+    cursor:pointer;
+    transition:box-shadow .12s, transform .12s;
+    box-shadow:0 1px 3px rgba(36,30,24,.06);
+  }
+  .sd-o:hover{box-shadow:0 3px 10px rgba(36,30,24,.15);transform:translateY(-1px)}
+  .sd-o.o-nam {background:var(--nam-nen); border-color:var(--nam-vien)}
+  .sd-o.o-nu  {background:var(--nu-nen);  border-color:var(--nu-vien)}
+  .sd-o.o-daure{background:#fff}
+  .sd-o.tam{
+    border-width:2px;border-color:var(--son);
+    box-shadow:0 3px 12px rgba(155,34,38,.18);
+  }
+  .sd-ten{
+    font-family:'Noto Serif',serif;
+    font-size:.82rem;font-weight:600;color:var(--muc);
+    line-height:1.25;
+  }
+  .sd-ngay{font-size:.72rem;color:var(--muc-nhat);margin-top:2px}
+
+  .sd-huong-dan{
+    flex-shrink:0;text-align:center;
+    padding:8px;font-size:.74rem;color:var(--muc-nhat);
+    background:#fff;border-top:1px solid var(--vien);
+  }
+
+  @media(max-width:640px){
+    .sd-o{width:112px;padding:7px 8px}
+    .sd-ten{font-size:.76rem}
+    .sd-hang{gap:8px}
+    .sd-huong-dan{font-size:.68rem}
+  }
+
 </style>
 </head>
 <body>
@@ -741,6 +828,8 @@
   <div class="man-ca-nhan" id="man-ca-nhan"></div>
 
   <div id="nhac-gio" class="nhac-gio"></div>
+
+  <div id="sodo" class="sodo"></div>
 
   <footer>
     <div class="lien-he">
@@ -1644,26 +1733,210 @@ function veCaNhan(p){
     khoiDS('Anh chị em — '+p.anh_em.length+' người', p.anh_em);
 }
 
-// ============ Sơ đồ cây (Topola) ============
-// handleCors=false: goi thang file, khong qua CORS proxy cua Topola
-//   (proxy do dang chet -> 'Failed to fetch'). GitHub Pages tu gui header CORS.
-// indi=<ID>: mo Topola voi NGUOI DO lam tam.
-//   Neu khong co, Topola tu chon mot nguoi bat ky - nen truoc day
-//   bam vao dau cung nhay den cung mot cho, khong lien quan gi den
-//   nguoi dang xem.
+// ═══════════════════════════════════════════════════════════════════
+//  SƠ ĐỒ CÂY 3 TẦNG — tự vẽ (thay cho Topola)
+//
+//  Tầng trên:  cha mẹ
+//  Tầng giữa:  người đang xem + anh em + vợ/chồng
+//  Tầng dưới:  con
+//
+//  Bấm vào một người -> cây dịch sang người đó (họ thành tầng giữa).
+//  Bấm nút "Xem đầy đủ" trên ô -> mở trang cá nhân.
+//  Zoom bằng nút +/- hoặc cuộn; kéo để di chuyển.
+// ═══════════════════════════════════════════════════════════════════
+
+let SODO_TAM = null;      // id người đang làm tâm
+let SODO_ZOOM = 1;
+let SODO_DX = 0, SODO_DY = 0;
+
 function moSoDo(id){
-  const u = location.href.split('#')[0].replace(/[^/]*$/,'') + 'giapha.ged';
-  let link = 'https://pewu.github.io/topola-viewer/#/view?url=' +
-             encodeURIComponent(u) + '&handleCors=false';
-  if(id) link += '&indi=' + encodeURIComponent(id);
-  window.open(link, '_blank');
+  SODO_TAM = id || timTam();
+  if(!SODO_TAM){ return; }
+  SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
+  document.body.classList.add('xem-sodo');
+  veSoDo();
+}
+
+function dongSoDo(){
+  document.body.classList.remove('xem-sodo');
+  const o = $('#sodo');
+  if(o) o.innerHTML = '';
+}
+
+// Nhãn ngày dưới tên: "1850 – 1900", hoặc "giỗ 27/5" nếu không có năm mất
+function nhanNgay(p){
+  const namSinh = (p.sinh || '').match(/\b(\d{4})\b/);
+  const namMat  = (p.mat  || '').match(/\b(\d{4})\b/);
+  if(namSinh && namMat) return namSinh[1] + ' – ' + namMat[1];
+  if(namSinh)           return 'sinh ' + namSinh[1];
+  if(namMat)            return 'mất ' + namMat[1];
+  // chỉ có ngày giỗ, không năm
+  const gio = (p.mat || '').match(/^(\d{1,2}\/\d{1,2})$/);
+  if(gio) return 'giỗ ' + gio[1];
+  return '';
+}
+
+function lopO(p){
+  if(!p.huyet_thong) return 'o-daure';
+  return p.gioi === 'F' ? 'o-nu' : 'o-nam';
+}
+
+// Vẽ một ô người. tam=true -> ô trung tâm (to hơn, viền đậm).
+function oNguoi(p, tam){
+  const ngay = nhanNgay(p);
+  return (
+    '<div class="sd-o '+lopO(p)+(tam ? ' tam' : '')+'" data-id="'+p.id+'">'+
+      '<div class="sd-ten">'+esc(p.ten)+'</div>'+
+      (ngay ? '<div class="sd-ngay">'+ngay+'</div>' : '')+
+    '</div>'
+  );
+}
+
+function veSoDo(){
+  const N = DL.nguoi;
+  const tam = N[SODO_TAM];
+  if(!tam){ dongSoDo(); return; }
+
+  // ── Gom người ba tầng ──
+  const cha = tam.cha ? N[tam.cha] : null;
+  const me  = tam.me  ? N[tam.me]  : null;
+
+  // Tầng giữa: tâm + anh em ruột + vợ/chồng của tâm.
+  // Anh em xếp theo thứ tự gia phả; chèn vợ/chồng ngay cạnh tâm.
+  const giua = [];
+  const anhEm = (tam.anh_em || []).map(x => N[x]).filter(Boolean)
+                .sort((a,b) => (a.thu_tu||0) - (b.thu_tu||0));
+  // tâm + anh em, giữ tâm ở giữa cụm cho dễ thấy
+  const huyetGiua = [tam, ...anhEm].sort((a,b) => (a.thu_tu||0) - (b.thu_tu||0));
+  for(const p of huyetGiua){
+    giua.push(p);
+    if(p.id === tam.id){
+      for(const vid of (tam.vo_chong || [])){
+        const v = N[vid];
+        if(v) giua.push(v);
+      }
+    }
+  }
+
+  // Tầng dưới: con của tâm (với vợ/chồng nào cũng gộp).
+  const con = (tam.con || []).map(x => N[x]).filter(Boolean)
+              .sort((a,b) => (a.khoa_sap && b.khoa_sap)
+                    ? (JSON.stringify(a.khoa_sap) < JSON.stringify(b.khoa_sap) ? -1 : 1)
+                    : (a.thu_tu||0) - (b.thu_tu||0));
+
+  // ── Dựng HTML ba hàng ──
+  let html = '<div class="sd-cay" id="sd-cay">';
+
+  // Tầng cha mẹ
+  if(cha || me){
+    html += '<div class="sd-hang sd-tren">';
+    if(cha) html += oNguoi(cha, false);
+    if(me)  html += oNguoi(me, false);
+    html += '</div>';
+    html += '<div class="sd-noi-doc"></div>';
+  }
+
+  // Tầng giữa
+  html += '<div class="sd-hang sd-giua">';
+  html += giua.map(p => oNguoi(p, p.id === tam.id)).join('');
+  html += '</div>';
+
+  // Tầng con
+  if(con.length){
+    html += '<div class="sd-noi-doc"></div>';
+    html += '<div class="sd-hang sd-duoi">';
+    html += con.map(p => oNguoi(p, false)).join('');
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  // Khung + thanh công cụ
+  const o = $('#sodo');
+  o.innerHTML =
+    '<div class="sd-thanh">'+
+      '<button class="sd-nut" onclick="dongSoDo()" title="Đóng">✕</button>'+
+      '<div class="sd-tieu">Sơ đồ — <b>'+esc(tam.ten)+'</b></div>'+
+      '<div class="sd-zoom">'+
+        '<button class="sd-nut" onclick="sodoZoom(-1)" title="Thu nhỏ">−</button>'+
+        '<button class="sd-nut" onclick="sodoZoom(1)" title="Phóng to">+</button>'+
+        '<button class="sd-nut" onclick="sodoVe()" title="Về giữa">⤾</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="sd-khung" id="sd-khung">'+ html +'</div>'+
+    '<div class="sd-huong-dan">Bấm một người để chuyển sang họ · '+
+      'Bấm lâu để xem đầy đủ · Kéo để di chuyển</div>';
+
+  ganSuKienSoDo();
+  apDungBienDoi();
+}
+
+function ganSuKienSoDo(){
+  const cay = $('#sd-cay');
+  if(!cay) return;
+
+  // Bấm ô: chuyển tâm. Bấm-giữ (nhấn lâu): mở trang cá nhân.
+  let timer = null, daGiu = false;
+
+  cay.querySelectorAll('.sd-o').forEach(o=>{
+    const id = o.dataset.id;
+
+    o.addEventListener('pointerdown', ()=>{
+      daGiu = false;
+      timer = setTimeout(()=>{ daGiu = true; location.hash = id; dongSoDo(); }, 500);
+    });
+    o.addEventListener('pointerup', ()=>{
+      clearTimeout(timer);
+      if(daGiu) return;                 // đã mở trang -> thôi
+      if(id === SODO_TAM) return;       // bấm chính tâm -> không làm gì
+      SODO_TAM = id;                    // chuyển tâm sang người vừa bấm
+      SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
+      veSoDo();
+    });
+    o.addEventListener('pointerleave', ()=> clearTimeout(timer));
+  });
+
+  // Kéo để di chuyển
+  const khung = $('#sd-khung');
+  let keo = false, x0 = 0, y0 = 0;
+  khung.addEventListener('pointerdown', e=>{
+    if(e.target.closest('.sd-o')) return;   // bấm ô thì không kéo
+    keo = true; x0 = e.clientX - SODO_DX; y0 = e.clientY - SODO_DY;
+    khung.setPointerCapture(e.pointerId);
+  });
+  khung.addEventListener('pointermove', e=>{
+    if(!keo) return;
+    SODO_DX = e.clientX - x0; SODO_DY = e.clientY - y0;
+    apDungBienDoi();
+  });
+  khung.addEventListener('pointerup', ()=> keo = false);
+
+  // Cuộn để zoom
+  khung.addEventListener('wheel', e=>{
+    e.preventDefault();
+    sodoZoom(e.deltaY < 0 ? 1 : -1, false);
+  }, {passive:false});
+}
+
+function apDungBienDoi(){
+  const cay = $('#sd-cay');
+  if(cay) cay.style.transform =
+    'translate('+SODO_DX+'px,'+SODO_DY+'px) scale('+SODO_ZOOM+')';
+}
+
+function sodoZoom(huong, veLai){
+  SODO_ZOOM = Math.min(2.2, Math.max(0.4, SODO_ZOOM + huong * 0.15));
+  apDungBienDoi();
+}
+function sodoVe(){
+  SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
+  apDungBienDoi();
 }
 
 // Nút ở chân trang:
 //   - Dang xem mot nguoi  -> lay NGUOI DO lam tam
 //   - Dang o danh sach    -> lay THUY TO lam tam
 //
-// Truoc day khong truyen indi -> Topola tu chon mot nguoi bat ky
 // (thuong la nguoi dau file). Tuy tien, khong lien quan gi den cay.
 // Lay thuy to thi mo ra la thay ca dong ho tu goc - hop ly hon han.
 // ── TÂM MẶC ĐỊNH CỦA SƠ ĐỒ CÂY ──────────────────────────────
