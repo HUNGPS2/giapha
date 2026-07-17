@@ -1040,7 +1040,10 @@ let TL  = {};   // tu lieu  : { id_nguoi: [{f:'...-tl1.jpg', so:1}, ...] }
 // Đời mở sẵn khi vào trang. Đời 12 là đời bà con hiện nay dễ nhận ra
 // người quen nhất — vào là thấy ngay, không phải bấm tìm.
 // Đổi số này nếu muốn mở đời khác. Đặt 0 = mở "Tất cả".
-const DOI_MAC_DINH = 12;
+// Vào trang mở "Tất cả" — người mới vào thường tìm tên ngay. Nếu mặc định
+// lọc một đời thì gõ tên người đời khác sẽ không ra, dễ tưởng không có.
+// (0 = Tất cả. Muốn mở sẵn một đời thì đặt số đời vào đây.)
+const DOI_MAC_DINH = 0;
 let LOC_DOI = DOI_MAC_DINH;
 let TU_KHOA = '';
 
