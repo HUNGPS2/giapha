@@ -1722,8 +1722,8 @@ function veCaNhan(p){
     const ns = (p.sinh || '').match(/\b(\d{4})\b/);
     const nm = (p.mat  || '').match(/\b(\d{4})\b/);
     if(!ns || !nm) return null;
-    const t = (+nm[1]) - (+ns[1]);
-    return (t > 0 && t < 130) ? t : null;   // loại số vô lý
+    const t = (+nm[1]) - (+ns[1]) + 1;      // +1 = tuổi mụ (theo lối Việt)
+    return (t > 0 && t < 130) ? t : null;
   }
 
   // Dong ngay mat / tinh trang. Noi dung THAT su biet, khong suy dien.
@@ -1872,9 +1872,9 @@ function nhanNgay(p){
   const namSinh = (p.sinh || '').match(/\b(\d{4})\b/);
   const namMat  = (p.mat  || '').match(/\b(\d{4})\b/);
   if(namSinh && namMat){
-    // Đủ hai năm -> thêm tuổi (xấp xỉ). Ô sơ đồ hẹp nên ghi gọn "(N tuổi)".
-    const t = (+namMat[1]) - (+namSinh[1]);
-    const tuoi = (t > 0 && t < 130) ? ' ('+t+' tuổi)' : '';
+    // Đủ hai năm -> thêm tuổi mụ (+1). Ô sơ đồ hẹp nên ghi gọn "(N t)".
+    const t = (+namMat[1]) - (+namSinh[1]) + 1;
+    const tuoi = (t > 0 && t < 130) ? ' ('+t+' t)' : '';
     return namSinh[1] + ' – ' + namMat[1] + tuoi;
   }
   if(namSinh)           return 'sinh ' + namSinh[1];
