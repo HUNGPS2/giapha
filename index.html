@@ -2049,16 +2049,21 @@ function ganSuKienSoDo(){
   let dxN = 0, dyN = 0;             // gốc dịch chuyển sơ đồ lúc nhấn
   let timer = null;                 // đếm giờ nhấn-giữ
   let oNhan = null;                 // ô đang được nhấn (nếu có)
+  let nhanMuiTen = false;           // lúc nhấn có trúng nút mũi tên không
 
   khung.addEventListener('pointerdown', e=>{
     cbXuong = true; dangKeo = false;
     xN = e.clientX; yN = e.clientY;
     dxN = SODO_DX; dyN = SODO_DY;
     oNhan = e.target.closest('.sd-o');
+    // Ghi nhớ NGAY LÚC NHẤN có trúng mũi tên không. Trên cảm ứng,
+    // setPointerCapture khiến e.target lúc NHẢ luôn là khung (không phải
+    // mũi tên) -> nếu chờ đến lúc nhả mới kiểm tra thì trượt. Phải bắt ở đây.
+    nhanMuiTen = !!e.target.closest('.sd-mui-ten');
     khung.setPointerCapture(e.pointerId);
 
     // Nhấn-giữ đứng yên 0.5s trên một ô (không phải mũi tên) -> mở trang
-    if(oNhan && !e.target.closest('.sd-mui-ten')){
+    if(oNhan && !nhanMuiTen){
       const id = oNhan.dataset.id;
       timer = setTimeout(()=>{
         if(!dangKeo){ location.hash = id; dongSoDo(); }
@@ -2091,8 +2096,10 @@ function ganSuKienSoDo(){
 
     const id = oNhan.dataset.id;
 
-    // Nhả TẠI CHỖ trên mũi tên -> xổ/thu cháu
-    if(e.target.closest('.sd-mui-ten')){
+    // Nhả TẠI CHỖ mà LÚC NHẤN trúng mũi tên -> xổ/thu cháu.
+    // Dùng cờ nhanMuiTen (bắt lúc nhấn), KHÔNG dùng e.target lúc nhả,
+    // vì trên cảm ứng e.target lúc nhả đã thành khung.
+    if(nhanMuiTen){
       SODO_XO_CHAU = (SODO_XO_CHAU === id) ? null : id;
       veSoDo();
       return;
