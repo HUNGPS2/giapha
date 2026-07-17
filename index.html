@@ -855,6 +855,7 @@
     transform:scale(.94);
   }
 
+  .tho{color:var(--muc-nhat);font-size:.9em}
 </style>
 </head>
 <body>
@@ -1714,6 +1715,17 @@ function veCaNhan(p){
     '<div class="hang"><div class="hang-nhan">'+nhan+'</div><div>'+
     (gtri || '<span class="thieu">chưa rõ</span>')+'</div></div>';
 
+  // Tuổi thọ: chỉ tính khi có ĐỦ cả năm sinh và năm mất.
+  // LƯU Ý: năm mất là âm lịch, năm sinh có thể dương -> con số này
+  // là XẤP XỈ (lệch 1 tuổi là thường). Ghi "hưởng thọ" theo lối truyền thống.
+  function tuoiTho(p){
+    const ns = (p.sinh || '').match(/\b(\d{4})\b/);
+    const nm = (p.mat  || '').match(/\b(\d{4})\b/);
+    if(!ns || !nm) return null;
+    const t = (+nm[1]) - (+ns[1]);
+    return (t > 0 && t < 130) ? t : null;   // loại số vô lý
+  }
+
   // Dong ngay mat / tinh trang. Noi dung THAT su biet, khong suy dien.
   function hangMat(p){
     const tt = p.trang_thai || 'con_song';
@@ -1725,9 +1737,11 @@ function veCaNhan(p){
       // NGAY GIO LA AM LICH. Phai ghi RO - nguoi doc mac dinh la duong lich,
       // ma cung nham ngay la chuyen he trong. Khong de ho "tu hieu".
       if(coNgay && coNam){
+        const t = tuoiTho(p);
         return hang('Ngày giỗ',
           '<span class="ngay-gio">'+esc(p.mat)+'</span> '+
-          '<span class="am-lich">âm lịch</span>');
+          '<span class="am-lich">âm lịch</span>'+
+          (t ? ' <span class="tho">— hưởng thọ '+t+' tuổi</span>' : ''));
       }
       if(coNgay && !coNam){
         // Rat pho bien voi cu to: nam mat that lac qua nhieu doi,
@@ -1737,7 +1751,10 @@ function veCaNhan(p){
           '<span class="am-lich">âm lịch</span> '+
           '<span class="thieu">— chưa rõ năm mất</span>');
       }
-      return hang('Năm mất', '<span class="ngay-gio">'+esc(p.mat)+'</span>');
+      const t = tuoiTho(p);
+      return hang('Năm mất',
+        '<span class="ngay-gio">'+esc(p.mat)+'</span>'+
+        (t ? ' <span class="tho">— hưởng thọ '+t+' tuổi</span>' : ''));
     }
 
     if(tt === 'da_mat'){
@@ -1854,7 +1871,12 @@ function dongSoDo(){
 function nhanNgay(p){
   const namSinh = (p.sinh || '').match(/\b(\d{4})\b/);
   const namMat  = (p.mat  || '').match(/\b(\d{4})\b/);
-  if(namSinh && namMat) return namSinh[1] + ' – ' + namMat[1];
+  if(namSinh && namMat){
+    // Đủ hai năm -> thêm tuổi (xấp xỉ). Ô sơ đồ hẹp nên ghi gọn "(N tuổi)".
+    const t = (+namMat[1]) - (+namSinh[1]);
+    const tuoi = (t > 0 && t < 130) ? ' ('+t+' tuổi)' : '';
+    return namSinh[1] + ' – ' + namMat[1] + tuoi;
+  }
   if(namSinh)           return 'sinh ' + namSinh[1];
   if(namMat)            return 'mất ' + namMat[1];
   // chỉ có ngày giỗ, không năm
