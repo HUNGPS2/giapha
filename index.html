@@ -1272,6 +1272,10 @@ function veNhacGio(){
   const khiNao = c =>
     c === 0 ? 'Hôm nay' : c === 1 ? 'Ngày mai' : 'Còn ' + c + ' ngày';
 
+  // Thứ trong tuần - người ta nhớ "thứ Bảy" dễ hơn con số ngày.
+  // getDay(): 0=CN, 1=T2... -> tên tiếng Việt.
+  const THU = ['Chủ nhật','thứ Hai','thứ Ba','thứ Tư','thứ Năm','thứ Sáu','thứ Bảy'];
+
   o.innerHTML =
     '<div class="ng-dau">'+
       '<span class="ng-tieu">Giỗ sắp tới</span>'+
@@ -1284,6 +1288,7 @@ function veNhacGio(){
           '<div class="ng-ten">'+esc(g.p.ten)+'</div>'+
           '<div class="ng-ngay">'+
             '<b>'+khiNao(g.conMay)+'</b> · '+
+            THU[g.duong.getDay()]+' '+
             g.duong.getDate()+'/'+(g.duong.getMonth()+1)+
             ' <span class="ng-am">('+g.am+' âm)</span>'+
           '</div>'+
