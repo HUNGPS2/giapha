@@ -1874,7 +1874,7 @@ function nhanNgay(p){
   if(namSinh && namMat){
     // Đủ hai năm -> thêm tuổi mụ (+1). Ô sơ đồ hẹp nên ghi gọn "(N t)".
     const t = (+namMat[1]) - (+namSinh[1]) + 1;
-    const tuoi = (t > 0 && t < 130) ? ' ('+t+' t)' : '';
+    const tuoi = (t > 0 && t < 130) ? ' ('+t+'t)' : '';
     return namSinh[1] + ' – ' + namMat[1] + tuoi;
   }
   if(namSinh)           return 'sinh ' + namSinh[1];
