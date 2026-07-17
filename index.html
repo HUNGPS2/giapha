@@ -2002,55 +2002,83 @@ function veSoDo(){
 
 function ganSuKienSoDo(){
   const cay = $('#sd-cay');
-  if(!cay) return;
-
-  // Bấm ô: chuyển tâm. Bấm-giữ (nhấn lâu): mở trang cá nhân.
-  let timer = null, daGiu = false;
-
-  cay.querySelectorAll('.sd-o').forEach(o=>{
-    const id = o.dataset.id;
-
-    o.addEventListener('pointerdown', e=>{
-      daGiu = false;
-      // Bấm-giữ trên mũi tên KHÔNG mở trang (mũi tên chỉ để xổ cháu)
-      if(e.target.closest('.sd-mui-ten')) return;
-      timer = setTimeout(()=>{ daGiu = true; location.hash = id; dongSoDo(); }, 500);
-    });
-    o.addEventListener('pointerup', e=>{
-      clearTimeout(timer);
-      if(daGiu) return;                 // đã mở trang -> thôi
-
-      // Bấm vào MŨI TÊN ▼ -> xổ/thu cột cháu dọc (không chuyển tâm).
-      // Bấm vào phần còn lại của ô (tên) -> làm trung tâm.
-      if(e.target.closest('.sd-mui-ten')){
-        SODO_XO_CHAU = (SODO_XO_CHAU === id) ? null : id;
-        veSoDo();
-        return;
-      }
-
-      if(id === SODO_TAM) return;       // bấm chính tâm -> không làm gì
-      SODO_TAM = id;                    // -> chuyển tâm sang người vừa bấm
-      SODO_XO_CHAU = null;
-      SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
-      veSoDo();
-    });
-    o.addEventListener('pointerleave', ()=> clearTimeout(timer));
-  });
-
-  // Kéo để di chuyển
   const khung = $('#sd-khung');
-  let keo = false, x0 = 0, y0 = 0;
+  if(!cay || !khung) return;
+
+  // ═══ MỘT MÔ HÌNH DUY NHẤT cho cả kéo lẫn chọn ═══
+  // Phân biệt bằng CHUỘT CÓ DỊCH CHUYỂN hay không:
+  //   - Nhấn rồi nhả TẠI CHỖ (dịch < 6px)      -> chọn ô / bấm nút
+  //   - Nhấn rồi KÉO ĐI (dịch >= 6px)           -> di chuyển sơ đồ
+  //   - Nhấn, ĐỨNG YÊN 0.5s                     -> mở trang cá nhân
+  // Nhờ vậy KÉO ĐƯỢC Ở BẤT KỲ ĐÂU, kể cả trên ô — không còn "vùng cấm".
+  const NGUONG = 6;                 // px: quá ngưỡng này coi là kéo
+
+  let dangKeo = false;              // đã vượt ngưỡng -> đang kéo
+  let cbXuong = false;              // con trỏ đang nhấn
+  let xN = 0, yN = 0;               // vị trí lúc nhấn
+  let dxN = 0, dyN = 0;             // gốc dịch chuyển sơ đồ lúc nhấn
+  let timer = null;                 // đếm giờ nhấn-giữ
+  let oNhan = null;                 // ô đang được nhấn (nếu có)
+
   khung.addEventListener('pointerdown', e=>{
-    if(e.target.closest('.sd-o')) return;   // bấm ô thì không kéo
-    keo = true; x0 = e.clientX - SODO_DX; y0 = e.clientY - SODO_DY;
+    cbXuong = true; dangKeo = false;
+    xN = e.clientX; yN = e.clientY;
+    dxN = SODO_DX; dyN = SODO_DY;
+    oNhan = e.target.closest('.sd-o');
     khung.setPointerCapture(e.pointerId);
+
+    // Nhấn-giữ đứng yên 0.5s trên một ô (không phải mũi tên) -> mở trang
+    if(oNhan && !e.target.closest('.sd-mui-ten')){
+      const id = oNhan.dataset.id;
+      timer = setTimeout(()=>{
+        if(!dangKeo){ location.hash = id; dongSoDo(); }
+      }, 500);
+    }
   });
+
   khung.addEventListener('pointermove', e=>{
-    if(!keo) return;
-    SODO_DX = e.clientX - x0; SODO_DY = e.clientY - y0;
-    apDungBienDoi();
+    if(!cbXuong) return;
+    const dx = e.clientX - xN, dy = e.clientY - yN;
+
+    // Vượt ngưỡng -> chuyển sang KÉO. Hủy nhấn-giữ.
+    if(!dangKeo && (Math.abs(dx) > NGUONG || Math.abs(dy) > NGUONG)){
+      dangKeo = true;
+      clearTimeout(timer);
+    }
+    if(dangKeo){
+      SODO_DX = dxN + dx; SODO_DY = dyN + dy;
+      apDungBienDoi();
+    }
   });
-  khung.addEventListener('pointerup', ()=> keo = false);
+
+  khung.addEventListener('pointerup', e=>{
+    clearTimeout(timer);
+    const daKeo = dangKeo;
+    cbXuong = false; dangKeo = false;
+
+    if(daKeo) return;                 // vừa kéo -> không chọn gì
+    if(!oNhan) return;                // nhả ở chỗ trống -> thôi
+
+    const id = oNhan.dataset.id;
+
+    // Nhả TẠI CHỖ trên mũi tên -> xổ/thu cháu
+    if(e.target.closest('.sd-mui-ten')){
+      SODO_XO_CHAU = (SODO_XO_CHAU === id) ? null : id;
+      veSoDo();
+      return;
+    }
+
+    // Nhả TẠI CHỖ trên ô -> chuyển tâm
+    if(id === SODO_TAM) return;
+    SODO_TAM = id;
+    SODO_XO_CHAU = null;
+    SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
+    veSoDo();
+  });
+
+  khung.addEventListener('pointercancel', ()=>{
+    clearTimeout(timer); cbXuong = false; dangKeo = false;
+  });
 
   // Cuộn để zoom
   khung.addEventListener('wheel', e=>{
