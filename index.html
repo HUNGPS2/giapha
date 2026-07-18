@@ -860,6 +860,26 @@
   }
 
   .tho{color:var(--muc-nhat);font-size:.9em}
+  /* ═══ MÀN HÌNH RỘNG (máy tính) ═══
+     Thu gọn ô và chữ để cây chiếm ít chiều cao hơn, chừa khoảng trống
+     phía dưới - bấm ▼ xổ cháu là thấy được ngay một phần, đỡ phải kéo. */
+  @media(min-width:641px){
+    .sd-o{
+      width:118px;
+      padding:6px 8px;
+    }
+    .sd-ten{font-size:.76rem;line-height:1.2}
+    .sd-ngay{font-size:.68rem;margin-top:1px}
+    .sd-hang{gap:9px}
+    .sd-noi-doc{height:18px}
+    .sd-cap-tam{padding:7px;gap:6px}
+    .sd-o.tam .sd-ten{font-size:.79rem}
+    .sd-mui-ten{width:24px;height:24px;font-size:.9rem;margin-top:3px}
+    .sd-cay{padding:14px 40px 40px}
+    .sd-chau-doc{padding:6px 6px 8px;gap:5px}
+    .sd-chau-doc .sd-o{width:108px}
+  }
+
 </style>
 </head>
 <body>
@@ -2121,8 +2141,10 @@ function canTamVaoGiua(){
 
       // Dọc: đặt tâm ở khoảng 42% chiều cao khung, để thấy được cả
       // tầng trên (ông bà, cha mẹ) lẫn tầng dưới (con).
+      // ĐANG XỔ CHÁU -> đẩy tâm lên cao hơn (32%) để chừa chỗ cho cột
+      // cháu bên dưới, bấm ▼ là thấy ngay, đỡ phải kéo.
       const giuaTY = rT2.top + rT2.height / 2;
-      const mucY   = rK.top + rK.height * 0.42;
+      const mucY   = rK.top + rK.height * (SODO_XO_CHAU ? 0.32 : 0.42);
       SODO_DY += (mucY - giuaTY);
       apDungBienDoi();
 
