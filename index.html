@@ -2054,7 +2054,10 @@ function canTamVaoGiua(){
   // Đo ngay sau khi gán innerHTML thì kích thước còn là số cũ / số 0 ->
   // cây hẹp lệch ít không nhận ra, nhưng cây RỘNG (người có 5-7 anh em
   // như cụ Dĩnh, cụ Thạc, cụ Độ) thì lệch hẳn, căn không ăn.
-  requestAnimationFrame(()=>{
+  // HAI khung hình: một để trình duyệt dựng layout, một để chắc chắn
+  // kích thước đã ổn định. Điện thoại chậm hơn máy tính, một khung
+  // đôi khi chưa đủ - đo được số cũ, căn lệch.
+  requestAnimationFrame(()=> requestAnimationFrame(()=>{
     // Kiểm tra Ở ĐÂY, không phải trước khi chờ: nếu người dùng vừa kéo tay
     // trong khoảnh khắc chờ vẽ, phải tôn trọng thao tác của họ.
     if(SODO_DA_KEO){ cay_hien(); return; }
@@ -2070,10 +2073,16 @@ function canTamVaoGiua(){
     const giuaTam   = rT.left + rT.width  / 2;
     const giuaKhung = rK.left + rK.width  / 2;
 
-    SODO_DX = giuaKhung - giuaTam;             // dịch ngang cho trùng
+    // CỘNG DỒN, không gán đè.
+    // getBoundingClientRect đo SAU khi transform đã áp -> rT.left đã bao gồm
+    // SODO_DX hiện tại. Gán đè bằng hiệu số sẽ xóa mất phần dịch đang có.
+    //
+    // KHÔNG chia cho zoom: chuỗi transform là 'translate(...) scale(...)',
+    // translate áp TRƯỚC scale nên DX không bị zoom nhân lên.
+    SODO_DX += (giuaKhung - giuaTam);
     apDungBienDoi();
     cay_hien();
-  });
+  }));
 }
 
 function ganSuKienSoDo(){
