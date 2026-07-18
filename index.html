@@ -2082,6 +2082,15 @@ function canTamVaoGiua(){
     SODO_DX += (giuaKhung - giuaTam);
     apDungBienDoi();
     cay_hien();
+
+    // ===== CHAN DOAN (tam thoi) - hien so de tim loi =====
+    const hd = $('.sd-huong-dan');
+    if(hd) hd.textContent =
+      'khung['+Math.round(rK.left)+'..'+Math.round(rK.right)+'] '+
+      'giuaK='+Math.round(giuaKhung)+' | '+
+      'tam['+Math.round(rT.left)+'..'+Math.round(rT.right)+'] '+
+      'giuaT='+Math.round(giuaTam)+' | '+
+      'DX='+Math.round(SODO_DX)+' Z='+SODO_ZOOM;
   }));
 }
 
