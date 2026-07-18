@@ -2028,6 +2028,27 @@ function veSoDo(){
 
   ganSuKienSoDo();
   apDungBienDoi();
+  canTamVaoGiua();     // đưa người đang xem vào chính giữa khung
+}
+
+// Căn ô TÂM (người đang xem) vào giữa khung theo chiều ngang.
+// Cây rộng theo tầng đông nhất, nên tâm thường lệch sang bên -
+// con cái của tâm nằm ngay dưới tâm, nếu tâm lệch thì con cũng tràn ra rìa.
+// Chỉ căn khi người dùng CHƯA tự kéo (DX/DY còn 0), để không giật khi họ đang xem.
+function canTamVaoGiua(){
+  if(SODO_DX !== 0 || SODO_DY !== 0) return;   // đã kéo tay -> tôn trọng
+  const khung = $('#sd-khung');
+  const tam = khung && khung.querySelector('.sd-o.tam');
+  if(!khung || !tam) return;
+
+  const rK = khung.getBoundingClientRect();
+  const rT = tam.getBoundingClientRect();
+  // Tâm ngang hiện tại của ô tâm và của khung
+  const giuaTam = rT.left + rT.width / 2;
+  const giuaKhung = rK.left + rK.width / 2;
+
+  SODO_DX = giuaKhung - giuaTam;   // dịch ngang cho trùng
+  apDungBienDoi();
 }
 
 function ganSuKienSoDo(){
@@ -2137,6 +2158,7 @@ function sodoZoom(huong, veLai){
 function sodoVe(){
   SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
   apDungBienDoi();
+  canTamVaoGiua();     // về giữa = đưa người đang xem vào chính giữa
 }
 
 // Nút ở chân trang:
