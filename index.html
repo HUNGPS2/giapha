@@ -561,7 +561,7 @@
 
   .ng-dau{
     display:flex;align-items:center;justify-content:space-between;
-    padding:9px 10px 9px 13px;
+    padding:6px 8px 6px 12px;
     background:var(--giay-dam);
     border-bottom:1px solid var(--vien);
   }
@@ -578,10 +578,10 @@
   }
   .ng-dong:hover{background:var(--vien);color:var(--muc)}
 
-  .ng-ds{max-height:236px;overflow-y:auto}
+  .ng-ds{max-height:300px;overflow-y:auto}
 
   .ng-o{
-    display:block;padding:10px 13px;cursor:pointer;
+    display:block;padding:6px 12px;cursor:pointer;
     border-bottom:1px solid var(--giay-dam);
     text-decoration:none;
     transition:background .12s;
@@ -593,17 +593,17 @@
 
   .ng-ten{
     font-family:'Noto Serif',serif;
-    font-size:.88rem;font-weight:600;color:var(--muc);
-    margin-bottom:2px;
+    font-size:.84rem;font-weight:600;color:var(--muc);
+    line-height:1.3;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
-  .ng-ngay{font-size:.76rem;color:var(--muc-nhat)}
+  .ng-ngay{font-size:.74rem;color:var(--muc-nhat);line-height:1.35}
   .ng-ngay b{color:var(--son);font-weight:600}
   .ng-am{color:var(--nhan)}
 
   @media(max-width:640px){
     .nhac-gio{ right:10px;left:10px;bottom:10px;width:auto; }
-    .ng-ds{max-height:180px}
+    .ng-ds{max-height:240px}
 
     /* Ẩn chú giải màu — trên màn hình nhỏ nó quá bé để đọc,
        lại chiếm chỗ của nội dung chính. */
