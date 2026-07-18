@@ -2036,19 +2036,29 @@ function veSoDo(){
 // con cái của tâm nằm ngay dưới tâm, nếu tâm lệch thì con cũng tràn ra rìa.
 // Chỉ căn khi người dùng CHƯA tự kéo (DX/DY còn 0), để không giật khi họ đang xem.
 function canTamVaoGiua(){
-  if(SODO_DX !== 0 || SODO_DY !== 0) return;   // đã kéo tay -> tôn trọng
-  const khung = $('#sd-khung');
-  const tam = khung && khung.querySelector('.sd-o.tam');
-  if(!khung || !tam) return;
+  // PHẢI đợi trình duyệt vẽ xong mới đo được vị trí thật.
+  // Đo ngay sau khi gán innerHTML thì kích thước còn là số cũ / số 0 ->
+  // cây hẹp lệch ít không nhận ra, nhưng cây RỘNG (người có 5-7 anh em
+  // như cụ Dĩnh, cụ Thạc, cụ Độ) thì lệch hẳn, căn không ăn.
+  requestAnimationFrame(()=>{
+    // Kiểm tra Ở ĐÂY, không phải trước khi chờ: nếu người dùng vừa kéo tay
+    // trong khoảnh khắc chờ vẽ, phải tôn trọng thao tác của họ.
+    if(SODO_DX !== 0 || SODO_DY !== 0) return;
 
-  const rK = khung.getBoundingClientRect();
-  const rT = tam.getBoundingClientRect();
-  // Tâm ngang hiện tại của ô tâm và của khung
-  const giuaTam = rT.left + rT.width / 2;
-  const giuaKhung = rK.left + rK.width / 2;
+    const khung = $('#sd-khung');
+    const tam = khung && khung.querySelector('.sd-o.tam');
+    if(!khung || !tam) return;
 
-  SODO_DX = giuaKhung - giuaTam;   // dịch ngang cho trùng
-  apDungBienDoi();
+    const rK = khung.getBoundingClientRect();
+    const rT = tam.getBoundingClientRect();
+    if(!rT.width) return;                      // chưa vẽ -> bỏ qua
+
+    const giuaTam   = rT.left + rT.width  / 2;
+    const giuaKhung = rK.left + rK.width  / 2;
+
+    SODO_DX = giuaKhung - giuaTam;             // dịch ngang cho trùng
+    apDungBienDoi();
+  });
 }
 
 function ganSuKienSoDo(){
