@@ -2070,32 +2070,34 @@ function canTamVaoGiua(){
     const rT = tam.getBoundingClientRect();
     if(!rT.width){ cay_hien(); return; }        // chưa vẽ -> thôi
 
+    // ── NGANG: đưa ô tâm vào giữa khung ──
     const giuaTam   = rT.left + rT.width  / 2;
     const giuaKhung = rK.left + rK.width  / 2;
 
-    // CỘNG DỒN, không gán đè.
-    // getBoundingClientRect đo SAU khi transform đã áp -> rT.left đã bao gồm
-    // SODO_DX hiện tại. Gán đè bằng hiệu số sẽ xóa mất phần dịch đang có.
-    //
-    // KHÔNG chia cho zoom: chuỗi transform là 'translate(...) scale(...)',
-    // translate áp TRƯỚC scale nên DX không bị zoom nhân lên.
+    // CỘNG DỒN, không gán đè: getBoundingClientRect đo SAU khi transform
+    // đã áp, nên rT.left đã bao gồm SODO_DX hiện tại.
     SODO_DX += (giuaKhung - giuaTam);
+
+    // ── DỌC: đưa ô tâm về khoảng 45% chiều cao khung ──
+    // Người có đủ tầng ông bà + cha mẹ thì tâm bị đẩy xuống rất thấp,
+    // chừa khoảng trống lớn phía trên và che mất các tầng trên.
+    // Đặt tâm hơi cao hơn giữa một chút để còn chỗ cho tầng con/cháu ở dưới.
+    const giuaTamY = rT.top + rT.height / 2;
+    const mucY     = rK.top + rK.height * 0.45;
+    SODO_DY += (mucY - giuaTamY);
+
+    // Không để cây trôi lên quá đỉnh khung (người ít tầng trên thì cây
+    // ngắn, căn dọc có thể đẩy phần đầu ra khỏi tầm nhìn).
+    const cayEl = $('#sd-cay');
+    if(cayEl){
+      const rC = cayEl.getBoundingClientRect();
+      const dinhCay = rC.top + (mucY - giuaTamY);   // vị trí đỉnh sau khi dịch
+      if(dinhCay > rK.top) SODO_DY -= (dinhCay - rK.top) - 8;
+    }
+
     apDungBienDoi();
     cay_hien();
 
-    // ===== CHAN DOAN (tam thoi) - hien so de tim loi =====
-    const hd = $('.sd-huong-dan');
-    const cayEl = $('#sd-cay');
-    const rC = cayEl ? cayEl.getBoundingClientRect() : {left:0,right:0,width:0};
-    // Do lai vi tri tam SAU khi da ap transform -> xem co dich that khong
-    setTimeout(()=>{
-      const rT2 = tam.getBoundingClientRect();
-      if(hd) hd.textContent =
-        'K['+Math.round(rK.left)+'..'+Math.round(rK.right)+'] '+
-        'cay['+Math.round(rC.left)+'..'+Math.round(rC.right)+'] w='+Math.round(rC.width)+' | '+
-        'tamTRUOC='+Math.round(giuaTam)+' tamSAU='+Math.round(rT2.left+rT2.width/2)+' | '+
-        'DX='+Math.round(SODO_DX)+' | style='+(cayEl?cayEl.style.transform:'?');
-    }, 60);
   }));
 }
 
