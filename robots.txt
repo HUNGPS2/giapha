@@ -1,0 +1,12 @@
+# Khong cho may tim kiem lap chi muc bat ky thu gi trong trang nay.
+#
+# The <meta name="robots"> trong index.html chi bao ve trang HTML.
+# File nay chan CA data.json, anh/, giapha.ged - nhung thu may tim kiem
+# co the lap chi muc truc tiep ma khong qua index.html.
+#
+# LUU Y: day chi la LOI DE NGHI voi may tim kiem tu te (Google, Bing).
+# Ai BIET DIA CHI van vao binh thuong. Repo tren GitHub van public.
+# Day KHONG PHAI bao mat, chi la tranh nguoi la tinh co tim thay.
+
+User-agent: *
+Disallow: /
