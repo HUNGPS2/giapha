@@ -2064,56 +2064,70 @@ function cay_hien(){
 }
 
 function canTamVaoGiua(){
-  // PHẢI đợi trình duyệt vẽ xong mới đo được vị trí thật.
-  // Đo ngay sau khi gán innerHTML thì kích thước còn là số cũ / số 0 ->
-  // cây hẹp lệch ít không nhận ra, nhưng cây RỘNG (người có 5-7 anh em
-  // như cụ Dĩnh, cụ Thạc, cụ Độ) thì lệch hẳn, căn không ăn.
-  // HAI khung hình: một để trình duyệt dựng layout, một để chắc chắn
-  // kích thước đã ổn định. Điện thoại chậm hơn máy tính, một khung
-  // đôi khi chưa đủ - đo được số cũ, căn lệch.
+  // Hai khung hình để trình duyệt dựng xong layout mới đo được.
   requestAnimationFrame(()=> requestAnimationFrame(()=>{
-    // Kiểm tra Ở ĐÂY, không phải trước khi chờ: nếu người dùng vừa kéo tay
-    // trong khoảnh khắc chờ vẽ, phải tôn trọng thao tác của họ.
-    if(SODO_DA_KEO){ cay_hien(); return; }
-
     const khung = $('#sd-khung');
-    const tam = khung && khung.querySelector('.sd-o.tam');
-    if(!khung || !tam){ cay_hien(); return; }
+    const cay   = $('#sd-cay');
+    const tam   = khung && khung.querySelector('.sd-o.tam');
+    if(!khung || !cay || !tam){ cay_hien(); return; }
 
     const rK = khung.getBoundingClientRect();
     const rT = tam.getBoundingClientRect();
-    if(!rT.width){ cay_hien(); return; }        // chưa vẽ -> thôi
+    if(!rT.width){ cay_hien(); return; }
 
-    // ── NGANG: đưa ô tâm vào giữa khung ──
-    const giuaTam   = rT.left + rT.width  / 2;
-    const giuaKhung = rK.left + rK.width  / 2;
+    // ═══ DÓNG TRỤC THEO TÂM ═══
+    // Trục dọc của người đang xem là trục chính. Ông bà, cha mẹ phải nằm
+    // THẲNG TRÊN ĐẦU tâm; con cháu tỏa đều DƯỚI CHÂN tâm.
+    // Anh em thì tràn tự do sang hai bên - không cần dóng.
+    //
+    // Mỗi tầng vốn tự căn giữa theo bề rộng của chính nó, nên tầng ít người
+    // (ông bà, cha mẹ) lệch hẳn khỏi tâm khi tầng giữa rộng (nhiều anh em).
+    const trucTam = rT.left + rT.width / 2;
 
-    // CỘNG DỒN, không gán đè: getBoundingClientRect đo SAU khi transform
-    // đã áp, nên rT.left đã bao gồm SODO_DX hiện tại.
-    SODO_DX += (giuaKhung - giuaTam);
-
-    // ── DỌC: đưa ô tâm về khoảng 45% chiều cao khung ──
-    // Người có đủ tầng ông bà + cha mẹ thì tâm bị đẩy xuống rất thấp,
-    // chừa khoảng trống lớn phía trên và che mất các tầng trên.
-    // Đặt tâm hơi cao hơn giữa một chút để còn chỗ cho tầng con/cháu ở dưới.
-    const giuaTamY = rT.top + rT.height / 2;
-    const mucY     = rK.top + rK.height * 0.45;
-    SODO_DY += (mucY - giuaTamY);
-
-    // Không để cây trôi LÊN quá đỉnh khung: nếu sau khi dịch mà đỉnh cây
-    // nằm CAO HƠN mép trên khung, phần đầu (ông bà) sẽ bị khuất.
-    const cayEl = $('#sd-cay');
-    if(cayEl){
-      const rC = cayEl.getBoundingClientRect();
-      const dinhSau = rC.top + (mucY - giuaTamY);   // vị trí đỉnh sau khi dịch
-      if(dinhSau < rK.top + 8){                     // trôi lên quá -> kéo xuống
-        SODO_DY += (rK.top + 8) - dinhSau;
-      }
+    // 1. Ông bà + cha mẹ: dịch cho GIỮA TẦNG trùng trục tâm
+    for(const lop of ['.sd-ong-ba', '.sd-tren']){
+      const hang = cay.querySelector(lop);
+      if(!hang) continue;
+      hang.style.transform = '';                 // bỏ dịch cũ để đo lại
+      const rH = hang.getBoundingClientRect();
+      const giuaHang = rH.left + rH.width / 2;
+      hang.style.transform = 'translateX(' + (trucTam - giuaHang) + 'px)';
     }
 
-    apDungBienDoi();
-    cay_hien();
+    // 2. Tầng con: cũng dóng giữa theo trục tâm
+    const hangDuoi = cay.querySelector('.sd-duoi');
+    if(hangDuoi){
+      hangDuoi.style.transform = '';
+      const rD = hangDuoi.getBoundingClientRect();
+      const giuaD = rD.left + rD.width / 2;
+      hangDuoi.style.transform = 'translateX(' + (trucTam - giuaD) + 'px)';
+    }
 
+    // 3. Đường nối dọc: cũng phải nằm trên trục tâm, nếu không sẽ nối
+    // vào khoảng không giữa cây.
+    cay.querySelectorAll('.sd-noi-doc').forEach(n=>{
+      n.style.transform = '';
+      const rN = n.getBoundingClientRect();
+      const giuaN = rN.left + rN.width / 2;
+      n.style.transform = 'translateX(' + (trucTam - giuaN) + 'px)';
+    });
+
+    // 4. Cuối cùng đưa chính TÂM vào giữa khung (nếu người dùng chưa kéo tay)
+    if(!SODO_DA_KEO){
+      const rT2 = tam.getBoundingClientRect();
+      const giuaT2 = rT2.left + rT2.width / 2;
+      const giuaK  = rK.left + rK.width / 2;
+      SODO_DX += (giuaK - giuaT2);
+
+      // Dọc: đặt tâm ở khoảng 42% chiều cao khung, để thấy được cả
+      // tầng trên (ông bà, cha mẹ) lẫn tầng dưới (con).
+      const giuaTY = rT2.top + rT2.height / 2;
+      const mucY   = rK.top + rK.height * 0.42;
+      SODO_DY += (mucY - giuaTY);
+
+      apDungBienDoi();
+    }
+    cay_hien();
   }));
 }
 
