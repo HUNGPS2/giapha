@@ -738,12 +738,14 @@
   .sd-khung:active{cursor:grabbing}
 
   .sd-cay{
-    position:absolute;top:24px;left:50%;
-    transform-origin:top center;
+    position:absolute;top:24px;left:0;
+    transform-origin:top left;
+    opacity:0;transition:opacity .12s;     /* hiện sau khi căn xong */
     display:flex;flex-direction:column;align-items:center;gap:0;
     padding:20px 40px 60px;
-    /* dịch về giữa theo bề ngang chính nó */
-    translate:-50%;
+    /* KHÔNG dùng thuộc tính 'translate' riêng ở đây.
+       apDungBienDoi() đặt 'transform', mà hai thứ này kết hợp khác nhau
+       giữa các trình duyệt (điện thoại hay lệch). Gộp -50% vào transform. */
   }
 
   .sd-hang{
@@ -751,6 +753,8 @@
     flex-wrap:nowrap;
   }
   .sd-noi-doc{width:2px;height:26px;background:var(--nhan);margin:0 auto}
+
+  .sd-cay.da-can{opacity:1}
 
   .sd-o{
     width:130px;flex-shrink:0;
@@ -1856,12 +1860,14 @@ let SODO_TAM = null;      // id người đang làm tâm
 let SODO_XO_CHAU = null;  // id người CON đang được xổ cháu xuống (dọc)
 let SODO_ZOOM = 1;
 let SODO_DX = 0, SODO_DY = 0;
+let SODO_DA_KEO = false;    // người dùng đã tự kéo tay chưa
 
 function moSoDo(id){
   SODO_TAM = id || timTam();
   if(!SODO_TAM){ return; }
   SODO_XO_CHAU = null;
   SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
+  SODO_DA_KEO = false;
   document.body.classList.add('xem-sodo');
   veSoDo();
 }
@@ -2029,12 +2035,20 @@ function veSoDo(){
   ganSuKienSoDo();
   apDungBienDoi();
   canTamVaoGiua();     // đưa người đang xem vào chính giữa khung
+  // Lưới an toàn: dù căn được hay không, sau 300ms phải hiện cây,
+  // tránh trường hợp lỗi làm cây ẩn vĩnh viễn.
+  setTimeout(cay_hien, 300);
 }
 
 // Căn ô TÂM (người đang xem) vào giữa khung theo chiều ngang.
 // Cây rộng theo tầng đông nhất, nên tâm thường lệch sang bên -
 // con cái của tâm nằm ngay dưới tâm, nếu tâm lệch thì con cũng tràn ra rìa.
 // Chỉ căn khi người dùng CHƯA tự kéo (DX/DY còn 0), để không giật khi họ đang xem.
+function cay_hien(){
+  const cay = $('#sd-cay');
+  if(cay) cay.classList.add('da-can');
+}
+
 function canTamVaoGiua(){
   // PHẢI đợi trình duyệt vẽ xong mới đo được vị trí thật.
   // Đo ngay sau khi gán innerHTML thì kích thước còn là số cũ / số 0 ->
@@ -2043,21 +2057,22 @@ function canTamVaoGiua(){
   requestAnimationFrame(()=>{
     // Kiểm tra Ở ĐÂY, không phải trước khi chờ: nếu người dùng vừa kéo tay
     // trong khoảnh khắc chờ vẽ, phải tôn trọng thao tác của họ.
-    if(SODO_DX !== 0 || SODO_DY !== 0) return;
+    if(SODO_DA_KEO){ cay_hien(); return; }
 
     const khung = $('#sd-khung');
     const tam = khung && khung.querySelector('.sd-o.tam');
-    if(!khung || !tam) return;
+    if(!khung || !tam){ cay_hien(); return; }
 
     const rK = khung.getBoundingClientRect();
     const rT = tam.getBoundingClientRect();
-    if(!rT.width) return;                      // chưa vẽ -> bỏ qua
+    if(!rT.width){ cay_hien(); return; }        // chưa vẽ -> thôi
 
     const giuaTam   = rT.left + rT.width  / 2;
     const giuaKhung = rK.left + rK.width  / 2;
 
     SODO_DX = giuaKhung - giuaTam;             // dịch ngang cho trùng
     apDungBienDoi();
+    cay_hien();
   });
 }
 
@@ -2109,6 +2124,7 @@ function ganSuKienSoDo(){
     // Vượt ngưỡng -> chuyển sang KÉO. Hủy nhấn-giữ.
     if(!dangKeo && (Math.abs(dx) > NGUONG || Math.abs(dy) > NGUONG)){
       dangKeo = true;
+      SODO_DA_KEO = true;        // người dùng tự kéo -> đừng tự căn nữa
       clearTimeout(timer);
     }
     if(dangKeo){
@@ -2141,6 +2157,7 @@ function ganSuKienSoDo(){
     SODO_TAM = id;
     SODO_XO_CHAU = null;
     SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
+    SODO_DA_KEO = false;         // chọn người mới -> cho phép tự căn lại
     veSoDo();
   });
 
@@ -2157,7 +2174,11 @@ function ganSuKienSoDo(){
 
 function apDungBienDoi(){
   const cay = $('#sd-cay');
-  if(cay) cay.style.transform =
+  if(!cay) return;
+  // -50% đưa cây về giữa theo bề ngang chính nó (thay cho CSS 'translate'),
+  // rồi mới đến dịch chuyển của người dùng và zoom. Một chuỗi transform duy
+  // nhất -> mọi trình duyệt hiểu như nhau.
+  cay.style.transform =
     'translate('+SODO_DX+'px,'+SODO_DY+'px) scale('+SODO_ZOOM+')';
 }
 
@@ -2167,6 +2188,7 @@ function sodoZoom(huong, veLai){
 }
 function sodoVe(){
   SODO_ZOOM = 1; SODO_DX = 0; SODO_DY = 0;
+  SODO_DA_KEO = false;           // cho phép tự căn lại
   apDungBienDoi();
   canTamVaoGiua();     // về giữa = đưa người đang xem vào chính giữa
 }
