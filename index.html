@@ -2044,6 +2044,20 @@ function veSoDo(){
 // Cây rộng theo tầng đông nhất, nên tâm thường lệch sang bên -
 // con cái của tâm nằm ngay dưới tâm, nếu tâm lệch thì con cũng tràn ra rìa.
 // Chỉ căn khi người dùng CHƯA tự kéo (DX/DY còn 0), để không giật khi họ đang xem.
+// Xoay điện thoại (dọc <-> ngang) làm khung đổi kích thước hẳn.
+// Cây giữ nguyên vị trí cũ -> lệch. Căn lại khi kích thước đổi.
+let SODO_HEN_XOAY = null;
+window.addEventListener('resize', ()=>{
+  if(!document.body.classList.contains('xem-sodo')) return;
+  clearTimeout(SODO_HEN_XOAY);
+  SODO_HEN_XOAY = setTimeout(()=>{
+    SODO_DA_KEO = false;           // xoay máy -> căn lại từ đầu
+    SODO_DX = 0; SODO_DY = 0;
+    apDungBienDoi();
+    canTamVaoGiua();
+  }, 180);
+});
+
 function cay_hien(){
   const cay = $('#sd-cay');
   if(cay) cay.classList.add('da-can');
