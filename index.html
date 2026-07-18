@@ -2124,8 +2124,18 @@ function canTamVaoGiua(){
       const giuaTY = rT2.top + rT2.height / 2;
       const mucY   = rK.top + rK.height * 0.42;
       SODO_DY += (mucY - giuaTY);
-
       apDungBienDoi();
+
+      // Kiểm tra LẠI SAU KHI DỊCH: nếu đỉnh cây (tầng ông bà) bị cắt
+      // ở mép trên khung thì kéo cây xuống cho đủ chỗ.
+      // Phải đo sau khi áp transform, vì trước đó số đo chưa phản ánh
+      // vị trí thật.
+      const rC = cay.getBoundingClientRect();
+      const LE = 14;                       // chừa một khoảng thở phía trên
+      if(rC.top < rK.top + LE){
+        SODO_DY += (rK.top + LE) - rC.top;
+        apDungBienDoi();
+      }
     }
     cay_hien();
   }));
