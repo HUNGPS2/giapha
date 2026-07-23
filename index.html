@@ -949,6 +949,16 @@
     .sd-nut.nut-toan{padding:0 7px;font-size:.72rem}
   }
 
+  /* Người đang được căn giữa trong toàn cảnh - làm nổi để mắt tìm thấy
+     ngay giữa 200 ô. Nhất là khi từ sơ đồ cá nhân nhảy ra. */
+  .tc-o.tc-tam{
+    border:2px solid var(--son) !important;
+    background:#FBF3E2 !important;
+    color:var(--son);font-weight:700;
+    box-shadow:0 0 0 3px rgba(155,34,38,.15), 0 2px 10px rgba(155,34,38,.25);
+    z-index:6;
+  }
+
 </style>
 </head>
 <body>
@@ -1975,8 +1985,9 @@ function moSoDo(id){
 // Từ sơ đồ cá nhân nhảy ra TOÀN CẢNH cả dòng họ.
 // Giúp người xem định vị: mình đang ở nhánh nào trong tổng thể.
 function tuSoDoRaToanCay(){
+  const id = SODO_TAM;          // người đang là tâm của sơ đồ cá nhân
   dongSoDo();
-  moToanCay();
+  moToanCay(id);                // -> toàn cảnh, căn vào đúng người đó
 }
 
 function dongSoDo(){
@@ -2001,12 +2012,45 @@ const TC_KHE_X  = 14;      // khe ngang giữa hai người/cặp
 const TC_KHE_Y  = 46;      // khe dọc giữa hai đời
 const TC_VC_KHE = 4;       // khe giữa vợ và chồng trong một cặp
 
-function moToanCay(){
-  const to = timTam ? Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong) : null;
+// moToanCay(canhId): mở toàn cảnh và ĐƯA canhId vào giữa khung.
+// Không truyền -> căn vào thủy tổ (đỉnh cây).
+function moToanCay(canhId){
+  const to = Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong);
   if(!to){ return; }
   TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
   document.body.classList.add('xem-toancay');
   veToanCay(to.id);
+  tcCanVaoGiua(canhId || to.id);
+}
+
+// Đưa một người vào giữa khung toàn cảnh.
+// Người xem cần thấy ngay mình đang ở đâu, thay vì cây neo góc trái.
+function tcCanVaoGiua(id){
+  requestAnimationFrame(()=> requestAnimationFrame(()=>{
+    const khung = $('#tc-khung');
+    const mat   = $('#tc-mat');
+    if(!khung || !mat) return;
+    const o = mat.querySelector('.tc-o[data-id="'+id+'"]');
+    if(!o) return;
+
+    const rK = khung.getBoundingClientRect();
+    const rO = o.getBoundingClientRect();
+    if(!rO.width) return;
+
+    // Cộng dồn: rO đo SAU khi transform đã áp.
+    TC_DX += (rK.left + rK.width/2)  - (rO.left + rO.width/2);
+    TC_DY += (rK.top  + rK.height/2) - (rO.top  + rO.height/2);
+    tcApDung();
+
+    // Không để cây trôi khỏi mép trên
+    const rM = mat.getBoundingClientRect();
+    if(rM.top > rK.top + 20) TC_DY -= (rM.top - rK.top - 20);
+    tcApDung();
+
+    // Đánh dấu người đang được căn để dễ nhận ra
+    mat.querySelectorAll('.tc-o.tc-tam').forEach(n=>n.classList.remove('tc-tam'));
+    o.classList.add('tc-tam');
+  }));
 }
 
 function dongToanCay(){
@@ -2172,7 +2216,15 @@ function tcZoom(h){
   TC_ZOOM = Math.min(2, Math.max(0.15, TC_ZOOM + h*0.12));
   tcApDung();
 }
-function tcVe(){ TC_ZOOM = 1; TC_DX = 0; TC_DY = 0; tcApDung(); }
+function tcVe(){
+  TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
+  tcApDung();
+  // Về giữa = về người đang được đánh dấu (hoặc thủy tổ nếu không có)
+  const mat = $('#tc-mat');
+  const dau = mat && mat.querySelector('.tc-o.tc-tam');
+  const to  = Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong);
+  tcCanVaoGiua(dau ? dau.dataset.id : (to ? to.id : null));
+}
 
 function tcGanSuKien(){
   const khung = $('#tc-khung');
