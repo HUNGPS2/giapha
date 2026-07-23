@@ -893,6 +893,50 @@
     .sd-chau-doc .sd-o{width:108px}
   }
 
+  /* ═══ CHẾ ĐỘ TOÀN CẢNH ═══ */
+  .toancay{display:none}
+  body.xem-toancay{overflow:hidden}
+  body.xem-toancay .toancay{
+    display:flex;flex-direction:column;
+    position:fixed;inset:0;z-index:120;
+    background:var(--giay);
+  }
+  .tc-thanh{
+    flex-shrink:0;display:flex;align-items:center;gap:12px;
+    padding:8px 12px;background:#fff;
+    border-bottom:1px solid var(--vien);
+  }
+  .tc-khung{
+    flex:1;overflow:hidden;position:relative;
+    touch-action:none;cursor:grab;
+  }
+  .tc-khung:active{cursor:grabbing}
+  .tc-mat{
+    position:absolute;top:20px;left:50%;
+    transform-origin:top center;
+  }
+  .tc-svg{position:absolute;top:0;left:0;pointer-events:none}
+  .tc-svg path{stroke:var(--nhan);stroke-width:1.5;fill:none}
+
+  .tc-o{
+    position:absolute;
+    width:90px;height:34px;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;
+    font-family:'Noto Serif',serif;font-size:.62rem;line-height:1.1;
+    font-weight:600;color:var(--muc);
+    padding:2px 4px;
+    border:1px solid var(--vien);border-radius:4px;
+    background:#fff;cursor:pointer;
+    overflow:hidden;
+    box-sizing:border-box;
+    transition:box-shadow .1s;
+  }
+  .tc-o:hover{box-shadow:0 2px 8px rgba(155,34,38,.25);z-index:5}
+  .tc-o.o-nam{background:var(--nam-nen);border-color:var(--nam-vien)}
+  .tc-o.o-nu {background:var(--nu-nen); border-color:var(--nu-vien)}
+  .tc-o.o-daure{background:#fff}
+
 </style>
 </head>
 <body>
@@ -944,6 +988,7 @@
   <div id="nhac-gio" class="nhac-gio"></div>
 
   <div id="sodo" class="sodo"></div>
+  <div id="toancay" class="toancay"></div>
 
   <footer>
     <div class="lien-he">
@@ -1645,7 +1690,10 @@ function dinhTuyen(){
   }else{
     document.body.classList.remove('dang-xem');
     ve();
-    if(nut) nut.textContent = 'Xem sơ đồ cây →';
+    // Tất cả -> toàn cảnh; lọc một đời -> sơ đồ 4 đời
+    if(nut) nut.textContent = (LOC_DOI === 0)
+      ? 'Xem toàn bộ cây họ →'
+      : 'Xem sơ đồ cây →';
   }
 }
 
@@ -1909,6 +1957,188 @@ function dongSoDo(){
   document.body.classList.remove('xem-sodo');
   const o = $('#sodo');
   if(o) o.innerHTML = '';
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  CHẾ ĐỘ TOÀN CẢNH — vẽ HẾT cây huyết thống từ thủy tổ xuống.
+//
+//  Khác chế độ 4 tầng: hiện toàn bộ dòng họ cùng lúc, chỉ để XEM và KÉO,
+//  không chuyển tâm. Bấm một người -> mở chế độ 4 tầng của họ.
+//  Chỉ hiện người huyết thống + vợ/chồng của họ. Ô nhỏ, chỉ họ tên.
+// ═══════════════════════════════════════════════════════════════════
+let TC_ZOOM = 1, TC_DX = 0, TC_DY = 0;
+
+const TC_O_RONG = 90;      // bề rộng một ô người
+const TC_O_CAO  = 34;      // chiều cao một ô
+const TC_KHE_X  = 14;      // khe ngang giữa hai người/cặp
+const TC_KHE_Y  = 46;      // khe dọc giữa hai đời
+const TC_VC_KHE = 4;       // khe giữa vợ và chồng trong một cặp
+
+function moToanCay(){
+  const to = timTam ? Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong) : null;
+  if(!to){ return; }
+  TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
+  document.body.classList.add('xem-toancay');
+  veToanCay(to.id);
+}
+
+function dongToanCay(){
+  document.body.classList.remove('xem-toancay');
+  const o = $('#toancay');
+  if(o) o.innerHTML = '';
+}
+
+// Bề rộng một NODE = người huyết thống + các vợ/chồng đứng cạnh
+function tcRongNode(id){
+  const p = DL.nguoi[id]; if(!p) return TC_O_RONG;
+  const soVC = (p.vo_chong || []).filter(v=>DL.nguoi[v]).length;
+  return TC_O_RONG + soVC * (TC_O_RONG + TC_VC_KHE);
+}
+
+// Bố cục đệ quy: trả về {rong, veO:[...], veNoi:[...]} với toạ độ tương đối.
+// x = mép trái cụm, y = hàng (đời). Trả bề rộng để cha căn giữa các con.
+function tcBoCuc(id, x, doi, oList, noiList){
+  const p = DL.nguoi[id];
+  if(!p) return 0;
+
+  const con = (p.con || []).map(c=>DL.nguoi[c]).filter(Boolean)
+              .sort((a,b)=>(a.thu_tu||0)-(b.thu_tu||0));
+
+  const rongNode = tcRongNode(id);
+  const y = doi * (TC_O_CAO + TC_KHE_Y);
+
+  if(!con.length){
+    // Lá: vẽ node tại x, trả bề rộng của node
+    tcVeNode(id, x, y, oList);
+    return rongNode;
+  }
+
+  // Vẽ các con trước, cộng dồn bề rộng
+  let cx = x, rongCon = 0;
+  const tamCon = [];
+  con.forEach((c, i)=>{
+    const w = tcBoCuc(c.id, cx, doi+1, oList, noiList);
+    tamCon.push(cx + w/2);       // tâm ngang của con này
+    cx += w + TC_KHE_X;
+    rongCon += w + (i < con.length-1 ? TC_KHE_X : 0);
+  });
+
+  // Node cha căn giữa dải con
+  const giuaCon = (tamCon[0] + tamCon[tamCon.length-1]) / 2;
+  const nodeX = giuaCon - rongNode/2;
+  tcVeNode(id, nodeX, y, oList);
+
+  // Đường nối: từ đáy người huyết thống (ô đầu cụm) xuống các con
+  const htX = nodeX + TC_O_RONG/2;            // tâm ngang ô huyết thống
+  const htY = y + TC_O_CAO;
+  const conY = y + TC_O_CAO + TC_KHE_Y;
+  // trục dọc + nhánh ngang
+  noiList.push('<path d="M '+htX+' '+htY+' V '+(htY+TC_KHE_Y/2)+'" />');
+  if(tamCon.length > 1){
+    noiList.push('<path d="M '+tamCon[0]+' '+(htY+TC_KHE_Y/2)+' H '+tamCon[tamCon.length-1]+'" />');
+  }
+  tamCon.forEach(tx=>{
+    noiList.push('<path d="M '+tx+' '+(htY+TC_KHE_Y/2)+' V '+conY+'" />');
+  });
+
+  return Math.max(rongNode, rongCon);
+}
+
+// Vẽ một node: người huyết thống + vợ/chồng cạnh nhau
+function tcVeNode(id, x, y, oList){
+  const p = DL.nguoi[id];
+  const ve = (pp, ox) => {
+    const lop = lopO(pp);
+    oList.push(
+      '<div class="tc-o '+lop+'" style="left:'+ox+'px;top:'+y+'px" '+
+        'data-id="'+pp.id+'">'+ esc(tenNgan(pp.ten)) +'</div>'
+    );
+  };
+  ve(p, x);
+  let ox = x + TC_O_RONG + TC_VC_KHE;
+  for(const vid of (p.vo_chong || [])){
+    const v = DL.nguoi[vid];
+    if(v){ ve(v, ox); ox += TC_O_RONG + TC_VC_KHE; }
+  }
+}
+
+// Rút gọn tên cho ô nhỏ: bỏ tiền tố số đời "XI.1." nếu có
+function tenNgan(ten){
+  return ten.replace(/^[IVX]+\.\d+\.\s*/, '').replace(/^\d+\.\s*/, '');
+}
+
+function veToanCay(toId){
+  const oList = [], noiList = [];
+  const rong = tcBoCuc(toId, 0, 0, oList, noiList);
+  const soDoi = 16;
+  const cao = soDoi * (TC_O_CAO + TC_KHE_Y);
+
+  const o = $('#toancay');
+  o.innerHTML =
+    '<div class="tc-thanh">'+
+      '<button class="sd-nut" onclick="dongToanCay()" title="Đóng">✕</button>'+
+      '<div class="sd-tieu">Toàn cảnh — <b>họ PHẠM ĐÌNH</b></div>'+
+      '<div class="sd-zoom">'+
+        '<button class="sd-nut" onclick="tcZoom(-1)">−</button>'+
+        '<button class="sd-nut" onclick="tcZoom(1)">+</button>'+
+        '<button class="sd-nut" onclick="tcVe()">⤾</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="tc-khung" id="tc-khung">'+
+      '<div class="tc-mat" id="tc-mat" style="width:'+rong+'px;height:'+cao+'px">'+
+        '<svg class="tc-svg" width="'+rong+'" height="'+cao+'">'+ noiList.join('') +'</svg>'+
+        oList.join('')+
+      '</div>'+
+    '</div>'+
+    '<div class="sd-huong-dan">Bấm một người để xem sơ đồ 4 đời của họ · Kéo để di chuyển</div>';
+
+  tcGanSuKien();
+  tcApDung();
+}
+
+function tcApDung(){
+  const mat = $('#tc-mat');
+  if(mat) mat.style.transform =
+    'translate('+TC_DX+'px,'+TC_DY+'px) scale('+TC_ZOOM+')';
+}
+function tcZoom(h){
+  TC_ZOOM = Math.min(2, Math.max(0.15, TC_ZOOM + h*0.12));
+  tcApDung();
+}
+function tcVe(){ TC_ZOOM = 1; TC_DX = 0; TC_DY = 0; tcApDung(); }
+
+function tcGanSuKien(){
+  const khung = $('#tc-khung');
+  if(!khung) return;
+  let keo=false, dangKeo=false, xN=0, yN=0, dxN=0, dyN=0, oNhan=null;
+  const NG=6;
+
+  khung.addEventListener('pointerdown', e=>{
+    keo=true; dangKeo=false;
+    xN=e.clientX; yN=e.clientY; dxN=TC_DX; dyN=TC_DY;
+    oNhan=e.target.closest('.tc-o');
+    khung.setPointerCapture(e.pointerId);
+  });
+  khung.addEventListener('pointermove', e=>{
+    if(!keo) return;
+    const dx=e.clientX-xN, dy=e.clientY-yN;
+    if(!dangKeo && (Math.abs(dx)>NG||Math.abs(dy)>NG)) dangKeo=true;
+    if(dangKeo){ TC_DX=dxN+dx; TC_DY=dyN+dy; tcApDung(); }
+  });
+  khung.addEventListener('pointerup', ()=>{
+    keo=false;
+    if(dangKeo) return;
+    if(oNhan){
+      // Bấm một người -> mở chế độ 4 tầng của họ
+      dongToanCay();
+      moSoDo(oNhan.dataset.id);
+    }
+  });
+  khung.addEventListener('wheel', e=>{
+    e.preventDefault();
+    tcZoom(e.deltaY<0 ? 1 : -1);
+  }, {passive:false});
 }
 
 // Nhãn ngày dưới tên: "1850 – 1900", hoặc "giỗ 27/5" nếu không có năm mất
@@ -2345,7 +2575,17 @@ function timTam(){
 $('#mo-so-do').onclick = e=>{
   e.preventDefault();
   const id = location.hash.slice(1);
-  moSoDo(DL && DL.nguoi[id] ? id : timTam());
+  // Đang xem một người cụ thể -> sơ đồ 4 đời của người đó.
+  // Đang xem "Tất cả" (LOC_DOI=0, không ở trang cá nhân)
+  //   -> TOÀN CẢNH: vẽ hết mọi nhánh, chỉ xem + kéo.
+  // Đang lọc một đời -> sơ đồ 4 đời từ nam đầu đời đó.
+  if(DL && DL.nguoi[id]){
+    moSoDo(id);
+  } else if(LOC_DOI === 0){
+    moToanCay();
+  } else {
+    moSoDo(timTam());
+  }
 };
 </script>
 </body>
