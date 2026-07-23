@@ -1267,10 +1267,17 @@ function ve(){
     : (LOC_DOI ? kq.length+' người ở đời '+LOC_DOI : 'Toàn bộ '+kq.length+' người, xếp theo đời');
   // Khi đang lọc MỘT đời (không phải tìm kiếm): thêm nút xem sơ đồ cây,
   // mở ở người đầu đời đó -> nhất quán với nút ở chân trang.
-  dem.innerHTML = '<span>'+chu+'</span>'+
-    ((LOC_DOI && !TU_KHOA)
-      ? ' <a href="#" class="dem-sodo" onclick="soDoDauDoi('+LOC_DOI+');return false;">Xem sơ đồ cây →</a>'
-      : '');
+  let lienSoDo = '';
+  if(!TU_KHOA){
+    if(LOC_DOI){
+      // Lọc một đời -> sơ đồ 4 đời từ nam đầu đời
+      lienSoDo = ' <a href="#" class="dem-sodo" onclick="soDoDauDoi('+LOC_DOI+');return false;">Xem sơ đồ cây →</a>';
+    }else{
+      // Tất cả -> toàn cảnh (đặt ngay đây, khỏi phải trượt xuống chân trang)
+      lienSoDo = ' <a href="#" class="dem-sodo" onclick="moToanCay();return false;">Xem toàn bộ cây họ →</a>';
+    }
+  }
+  dem.innerHTML = '<span>'+chu+'</span>'+lienSoDo;
 
   // nhóm theo đời
   const nhom = {};
@@ -1996,61 +2003,91 @@ function tcRongNode(id){
   return TC_O_RONG + soVC * (TC_O_RONG + TC_VC_KHE);
 }
 
-// Bố cục đệ quy: trả về {rong, veO:[...], veNoi:[...]} với toạ độ tương đối.
-// x = mép trái cụm, y = hàng (đời). Trả bề rộng để cha căn giữa các con.
-function tcBoCuc(id, x, doi, oList, noiList){
+// ─── BỐ CỤC HAI LƯỢT ───
+// Lượt 1: tính toạ độ x của MỌI người vào map POS (chỉ tính, không vẽ).
+//         Cha luôn nằm giữa các con; nếu node cha (gồm vợ) cần nhiều chỗ
+//         hơn dải con, DỜI CẢ NHÁNH con sang phải - không làm lệch trục cha.
+// Lượt 2: vẽ ô + đường nối từ POS.
+//
+// tcXep(id, x, doi): đặt cụm gốc id bắt đầu tại x, trả về BỀ RỘNG cụm.
+//   Ghi vào POS[id] = { htX, y }  (htX = tâm ô huyết thống của người này)
+function tcXep(id, x, doi, POS){
   const p = DL.nguoi[id];
   if(!p) return 0;
+  const y = doi * (TC_O_CAO + TC_KHE_Y);
+  const rongNode = tcRongNode(id);
 
   const con = (p.con || []).map(c=>DL.nguoi[c]).filter(Boolean)
               .sort((a,b)=>(a.thu_tu||0)-(b.thu_tu||0));
 
-  const rongNode = tcRongNode(id);
-  const y = doi * (TC_O_CAO + TC_KHE_Y);
-
   if(!con.length){
-    // Lá: vẽ node tại x, trả bề rộng của node
-    tcVeNode(id, x, y, oList);
+    POS[id] = { htX: x + TC_O_RONG/2, y };
     return rongNode;
   }
 
-  // Vẽ các con trước, cộng dồn bề rộng.
-  // tamCon = tâm Ô HUYẾT THỐNG của con (ô đầu node), KHÔNG phải tâm cả
-  // node - vì con có vợ/chồng thì node rộng, đường nối phải trỏ đúng vào
-  // người huyết thống chứ không vào khoảng giữa cặp.
+  // Xếp con trước, bắt đầu tạm từ x
   let cx = x, rongCon = 0;
-  const tamCon = [];
-  con.forEach((c, i)=>{
-    const w = tcBoCuc(c.id, cx, doi+1, oList, noiList);
-    tamCon.push(cx + TC_O_RONG/2);      // tâm Ô HUYẾT THỐNG (luôn ở đầu node)
+  con.forEach((c,i)=>{
+    const w = tcXep(c.id, cx, doi+1, POS);
     cx += w + TC_KHE_X;
     rongCon += w + (i < con.length-1 ? TC_KHE_X : 0);
   });
 
-  // Node cha: ô huyết thống căn giữa dải con (theo tâm các ô huyết thống con)
-  const giuaCon = (tamCon[0] + tamCon[tamCon.length-1]) / 2;
-  let htXcha = giuaCon;                  // tâm ô huyết thống của CHA
-  // Node cha (gồm vợ) bắt đầu tại htXcha - nửa ô huyết thống
+  // Trục cha = giữa ô huyết thống con đầu và con cuối
+  const htDau  = POS[con[0].id].htX;
+  const htCuoi = POS[con[con.length-1].id].htX;
+  let htXcha = (htDau + htCuoi) / 2;
+
+  // Node cha bắt đầu tại htXcha - nửa ô ht. Nếu thò trái quá mép x,
+  // DỜI CẢ NHÁNH con sang phải cho vừa (giữ trục cha ở giữa con).
   let nodeX = htXcha - TC_O_RONG/2;
-  // Nếu node cha thò sang trái quá mép x -> đẩy cả node về, giữ trong khung
-  if(nodeX < x){ nodeX = x; htXcha = nodeX + TC_O_RONG/2; }
-  tcVeNode(id, nodeX, y, oList);
-
-  // Đường nối: từ đáy Ô HUYẾT THỐNG cha xuống các ô huyết thống con
-  const htY = y + TC_O_CAO;
-  const conY = y + TC_O_CAO + TC_KHE_Y;
-  noiList.push('<path d="M '+htXcha+' '+htY+' V '+(htY+TC_KHE_Y/2)+'" />');
-  if(tamCon.length > 1){
-    noiList.push('<path d="M '+tamCon[0]+' '+(htY+TC_KHE_Y/2)+' H '+tamCon[tamCon.length-1]+'" />');
+  if(nodeX < x){
+    const dich = x - nodeX;
+    for(const c of con) tcDich(c.id, dich, POS);
+    htXcha += dich;
+    nodeX  += dich;
+    rongCon += dich;
   }
-  tamCon.forEach(tx=>{
-    noiList.push('<path d="M '+tx+' '+(htY+TC_KHE_Y/2)+' V '+conY+'" />');
-  });
 
-  // Bề rộng cụm = từ mép trái đến hết node cha HOẶC hết dải con, lấy rộng hơn.
-  const phaiCha = nodeX + rongNode;
-  const phaiCon = x + rongCon;
-  return Math.max(phaiCha, phaiCon) - x;
+  POS[id] = { htX: htXcha, y };
+  const rongCumCon = (nodeX < x ? 0 : 0) + rongCon;
+  return Math.max(nodeX + rongNode - x, rongCumCon);
+}
+
+// Dời cả một nhánh (id và mọi con cháu) sang phải 'd' px
+function tcDich(id, d, POS){
+  if(POS[id]) POS[id].htX += d;
+  const p = DL.nguoi[id];
+  for(const c of (p.con || [])) if(DL.nguoi[c]) tcDich(c, d, POS);
+}
+
+// Sau khi có POS, vẽ ô + đường nối
+function tcVeTuPos(id, POS, oList, noiList){
+  const p = DL.nguoi[id];
+  const pos = POS[id];
+  if(!pos) return;
+  // Vẽ node: ô huyết thống có tâm tại pos.htX
+  tcVeNode(id, pos.htX - TC_O_RONG/2, pos.y, oList);
+
+  const con = (p.con || []).map(c=>DL.nguoi[c]).filter(Boolean)
+              .sort((a,b)=>(a.thu_tu||0)-(b.thu_tu||0));
+  if(!con.length) return;
+
+  const htY  = pos.y + TC_O_CAO;
+  const conY = pos.y + TC_O_CAO + TC_KHE_Y;
+  const giua = htY + TC_KHE_Y/2;
+  const tamCon = con.map(c=>POS[c.id].htX);
+
+  // trục dọc cha xuống thanh ngang
+  noiList.push('<path d="M '+pos.htX+' '+htY+' V '+giua+'" />');
+  // thanh ngang nối các con
+  if(tamCon.length > 1){
+    noiList.push('<path d="M '+tamCon[0]+' '+giua+' H '+tamCon[tamCon.length-1]+'" />');
+  }
+  // nhánh dọc xuống từng con
+  tamCon.forEach(tx=> noiList.push('<path d="M '+tx+' '+giua+' V '+conY+'" />'));
+
+  for(const c of con) tcVeTuPos(c.id, POS, oList, noiList);
 }
 
 // Vẽ một node: người huyết thống + vợ/chồng cạnh nhau
@@ -2078,7 +2115,9 @@ function tenNgan(ten){
 
 function veToanCay(toId){
   const oList = [], noiList = [];
-  const rong = tcBoCuc(toId, 0, 0, oList, noiList);
+  const POS = {};
+  const rong = tcXep(toId, 0, 0, POS);
+  tcVeTuPos(toId, POS, oList, noiList);
   const soDoi = 16;
   const cao = soDoi * (TC_O_CAO + TC_KHE_Y);
 
