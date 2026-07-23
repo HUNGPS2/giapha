@@ -937,6 +937,18 @@
   .tc-o.o-nu {background:var(--nu-nen); border-color:var(--nu-vien)}
   .tc-o.o-daure{background:#fff}
 
+  /* Nút "Toàn họ" trong thanh sơ đồ cá nhân - chữ nên rộng hơn nút ký hiệu.
+     Trên điện thoại thu gọn chữ để không vỡ thanh. */
+  .sd-nut.nut-toan{
+    width:auto;padding:0 10px;
+    font-size:.78rem;font-weight:600;
+    color:var(--son);
+    white-space:nowrap;
+  }
+  @media(max-width:520px){
+    .sd-nut.nut-toan{padding:0 7px;font-size:.72rem}
+  }
+
 </style>
 </head>
 <body>
@@ -1960,6 +1972,13 @@ function moSoDo(id){
   veSoDo();
 }
 
+// Từ sơ đồ cá nhân nhảy ra TOÀN CẢNH cả dòng họ.
+// Giúp người xem định vị: mình đang ở nhánh nào trong tổng thể.
+function tuSoDoRaToanCay(){
+  dongSoDo();
+  moToanCay();
+}
+
 function dongSoDo(){
   document.body.classList.remove('xem-sodo');
   const o = $('#sodo');
@@ -2330,6 +2349,9 @@ function veSoDo(){
       '<button class="sd-nut" onclick="dongSoDo()" title="Đóng">✕</button>'+
       '<div class="sd-tieu">Sơ đồ — <b>'+esc(tam.ten)+'</b></div>'+
       '<div class="sd-zoom">'+
+        // Nhảy ra toàn cảnh - để biết mình đang ở đâu trong cả dòng họ
+        '<button class="sd-nut nut-toan" onclick="tuSoDoRaToanCay()" '+
+          'title="Xem toàn bộ cây họ">Toàn họ</button>'+
         '<button class="sd-nut" onclick="sodoZoom(-1)" title="Thu nhỏ">−</button>'+
         '<button class="sd-nut" onclick="sodoZoom(1)" title="Phóng to">+</button>'+
         '<button class="sd-nut" onclick="sodoVe()" title="Về giữa">⤾</button>'+
