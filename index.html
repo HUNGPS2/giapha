@@ -912,8 +912,10 @@
   }
   .tc-khung:active{cursor:grabbing}
   .tc-mat{
-    position:absolute;top:20px;left:50%;
-    transform-origin:top center;
+    position:absolute;top:20px;left:0;
+    /* Gốc ở góc trái trên: phép tính zoom-giữ-tâm trong tcZoom() dựa
+       trên gốc này. Dùng 'top center' + left:50% sẽ lệch. */
+    transform-origin:top left;
   }
   .tc-svg{position:absolute;top:0;left:0;pointer-events:none}
   .tc-svg path{stroke:var(--nhan);stroke-width:1.5;fill:none}
@@ -2212,8 +2214,29 @@ function tcApDung(){
   if(mat) mat.style.transform =
     'translate('+TC_DX+'px,'+TC_DY+'px) scale('+TC_ZOOM+')';
 }
-function tcZoom(h){
-  TC_ZOOM = Math.min(2, Math.max(0.15, TC_ZOOM + h*0.12));
+// Zoom GIỮ NGUYÊN TÂM MÀN HÌNH: điểm đang ở giữa khung phải đứng yên,
+// nếu không người xem mất chỗ mình đang nhìn (gốc scale vốn ở góc trên).
+// Công thức: điểm p (toạ độ trong cây) đang hiện ở giữa khung. Sau khi
+// đổi zoom, dịch TC_DX/DY sao cho p vẫn ở giữa.
+function tcZoom(h, tamX, tamY){
+  const khung = $('#tc-khung');
+  const zCu = TC_ZOOM;
+  const zMoi = Math.min(2, Math.max(0.15, TC_ZOOM + h*0.12));
+  if(zMoi === zCu) return;
+
+  if(khung){
+    const rK = khung.getBoundingClientRect();
+    // Điểm neo: mặc định là tâm khung; cuộn chuột thì neo tại con trỏ.
+    const nx = (tamX !== undefined ? tamX : rK.left + rK.width/2)  - rK.left;
+    const ny = (tamY !== undefined ? tamY : rK.top  + rK.height/2) - rK.top;
+    // Toạ độ điểm neo trong hệ của cây (trước khi đổi zoom)
+    const px = (nx - TC_DX) / zCu;
+    const py = (ny - TC_DY) / zCu;
+    // Sau khi đổi zoom, giữ điểm đó đứng yên tại (nx, ny)
+    TC_DX = nx - px * zMoi;
+    TC_DY = ny - py * zMoi;
+  }
+  TC_ZOOM = zMoi;
   tcApDung();
 }
 function tcVe(){
@@ -2255,7 +2278,8 @@ function tcGanSuKien(){
   });
   khung.addEventListener('wheel', e=>{
     e.preventDefault();
-    tcZoom(e.deltaY<0 ? 1 : -1);
+    // Neo tại con trỏ -> phóng to đúng chỗ đang trỏ, như bản đồ
+    tcZoom(e.deltaY<0 ? 1 : -1, e.clientX, e.clientY);
   }, {passive:false});
 }
 
