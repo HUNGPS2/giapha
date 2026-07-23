@@ -2014,27 +2014,32 @@ function tcBoCuc(id, x, doi, oList, noiList){
     return rongNode;
   }
 
-  // Vẽ các con trước, cộng dồn bề rộng
+  // Vẽ các con trước, cộng dồn bề rộng.
+  // tamCon = tâm Ô HUYẾT THỐNG của con (ô đầu node), KHÔNG phải tâm cả
+  // node - vì con có vợ/chồng thì node rộng, đường nối phải trỏ đúng vào
+  // người huyết thống chứ không vào khoảng giữa cặp.
   let cx = x, rongCon = 0;
   const tamCon = [];
   con.forEach((c, i)=>{
     const w = tcBoCuc(c.id, cx, doi+1, oList, noiList);
-    tamCon.push(cx + w/2);       // tâm ngang của con này
+    tamCon.push(cx + TC_O_RONG/2);      // tâm Ô HUYẾT THỐNG (luôn ở đầu node)
     cx += w + TC_KHE_X;
     rongCon += w + (i < con.length-1 ? TC_KHE_X : 0);
   });
 
-  // Node cha căn giữa dải con
+  // Node cha: ô huyết thống căn giữa dải con (theo tâm các ô huyết thống con)
   const giuaCon = (tamCon[0] + tamCon[tamCon.length-1]) / 2;
-  const nodeX = giuaCon - rongNode/2;
+  let htXcha = giuaCon;                  // tâm ô huyết thống của CHA
+  // Node cha (gồm vợ) bắt đầu tại htXcha - nửa ô huyết thống
+  let nodeX = htXcha - TC_O_RONG/2;
+  // Nếu node cha thò sang trái quá mép x -> đẩy cả node về, giữ trong khung
+  if(nodeX < x){ nodeX = x; htXcha = nodeX + TC_O_RONG/2; }
   tcVeNode(id, nodeX, y, oList);
 
-  // Đường nối: từ đáy người huyết thống (ô đầu cụm) xuống các con
-  const htX = nodeX + TC_O_RONG/2;            // tâm ngang ô huyết thống
+  // Đường nối: từ đáy Ô HUYẾT THỐNG cha xuống các ô huyết thống con
   const htY = y + TC_O_CAO;
   const conY = y + TC_O_CAO + TC_KHE_Y;
-  // trục dọc + nhánh ngang
-  noiList.push('<path d="M '+htX+' '+htY+' V '+(htY+TC_KHE_Y/2)+'" />');
+  noiList.push('<path d="M '+htXcha+' '+htY+' V '+(htY+TC_KHE_Y/2)+'" />');
   if(tamCon.length > 1){
     noiList.push('<path d="M '+tamCon[0]+' '+(htY+TC_KHE_Y/2)+' H '+tamCon[tamCon.length-1]+'" />');
   }
@@ -2042,7 +2047,10 @@ function tcBoCuc(id, x, doi, oList, noiList){
     noiList.push('<path d="M '+tx+' '+(htY+TC_KHE_Y/2)+' V '+conY+'" />');
   });
 
-  return Math.max(rongNode, rongCon);
+  // Bề rộng cụm = từ mép trái đến hết node cha HOẶC hết dải con, lấy rộng hơn.
+  const phaiCha = nodeX + rongNode;
+  const phaiCon = x + rongCon;
+  return Math.max(phaiCha, phaiCon) - x;
 }
 
 // Vẽ một node: người huyết thống + vợ/chồng cạnh nhau
