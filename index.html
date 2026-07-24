@@ -160,6 +160,7 @@
     width:3px;height:14px;border-radius:1px;display:inline-block;
   }
   .chu-giai .vach.song{background:var(--song)}
+  .chu-giai .vach.chua-ro{background:var(--nhan)}   /* vàng đồng - khớp vạch thẻ */
   .chu-giai .vach.mat {background:var(--vien)}
 
   .doi-nhom{margin-bottom:30px}
@@ -1008,7 +1009,7 @@
       <span><i class="o ht-nu"></i> Nữ trong họ</span>
       <span><i class="o dau-re"></i> Dâu / rể</span>
       <span class="tach">·</span>
-      <span><i class="vach song"></i> Còn sống</span>
+      <span><i class="vach chua-ro"></i> Chưa rõ</span>
       <span><i class="vach mat"></i> Đã mất</span>
     </div>
 
@@ -1651,7 +1652,9 @@ function veHangGiaDinh(ds){
 }
 
 function theNguoi(p){
-  const cls = ['the', 'tt-'+(p.trang_thai || 'con_song')];
+  // Vạch màu bên trái thẻ: có năm mất HOẶC sinh trên 100 năm trước
+  // -> đã mất. Còn lại -> chưa rõ. Cùng quy tắc với nhãn trên trang cá nhân.
+  const cls = ['the', (p.mat || daQuaTram(p)) ? 'tt-da_mat' : 'tt-chua_ro'];
   // Nen the: con chau HUYET THONG co nen mau nhat (nam/nu khac sac).
   // Dau/re -> nen TRANG, de khong noi hon con chau trong ho.
   cls.push(p.huyet_thong ? 'ht-'+lopGioi(p.gioi) : 'dau-re');
@@ -1811,6 +1814,16 @@ function phongTo(src, loi){
   document.body.appendChild(o);
 }
 
+// Sinh trên 100 năm trước mà không có năm mất -> coi như đã khuất.
+// Năm mất của những cụ này sẽ vĩnh viễn không tìm được; ghi "Chưa rõ"
+// nghe như lỗi nhập liệu. Nếu quả có cụ nào trên 100 tuổi còn sống,
+// con cháu cụ sẽ báo để cập nhật.
+function daQuaTram(p){
+  const ns = (p.sinh || '').match(/\b(\d{4})\b/);
+  if(!ns) return false;                    // không có năm sinh -> không suy
+  return ((new Date()).getFullYear() - (+ns[1]) + 1) >= 100;
+}
+
 function veCaNhan(p){
   const N = DL.nguoi;
 
@@ -1832,8 +1845,13 @@ function veCaNhan(p){
     'title="Xem tất cả người ở đời '+p.doi+'">Đời '+p.doi+'</a>');
   meta.push('<span class="vien-nho">'+(p.gioi==='M'?'Nam':p.gioi==='F'?'Nữ':'—')+'</span>');
   if(!p.huyet_thong) meta.push('<span class="vien-nho">'+(p.gioi==='F'?'Con dâu':'Con rể')+'</span>');
-  if(p.trang_thai === 'con_song')      meta.push('<span class="vien-nho song">Còn sống</span>');
-  else if(p.trang_thai === 'chua_ro')  meta.push('<span class="vien-nho chua-ro">Chưa rõ</span>');
+  // Nhãn tình trạng: có năm mất -> không cần nhãn (đã ghi ở mục Thông tin).
+  // Không năm mất mà sinh trên 100 năm trước -> Đã mất. Còn lại -> Chưa rõ.
+  if(!p.mat){
+    meta.push(daQuaTram(p)
+      ? '<span class="vien-nho mat">Đã mất</span>'
+      : '<span class="vien-nho chua-ro">Chưa rõ</span>');
+  }
 
   const khoiDS = (tieu, ids) => {
     if(!ids || !ids.length) return '';
@@ -1892,21 +1910,27 @@ function veCaNhan(p){
         (t ? ' <span class="tho">— hưởng thọ '+t+' tuổi</span>' : ''));
     }
 
-    if(tt === 'da_mat'){
-      // Doi <= 11: chac chan da khuat, nhung khong ai ghi lai ngay.
-      // Noi ro la KHONG BIET, thay vi de trong cho nguoi doc tu suy.
+    // ─── KHÔNG CÓ NĂM MẤT ───
+    // Phân biệt hai loại "không biết":
+    //   1. Sinh trên 100 năm trước -> gần như chắc chắn đã khuất, và năm mất
+    //      sẽ VĨNH VIỄN không tìm được. Ghi "Chưa rõ" ở đây nghe như lỗi
+    //      nhập liệu, trong khi ai đọc cũng biết cụ đã mất.
+    //   2. Còn lại -> thật sự CHƯA CẬP NHẬT ĐƯỢC. Không suy diễn.
+    //
+    // Nếu quả có cụ nào trên 100 tuổi còn sống, con cháu cụ sẽ báo để
+    // cập nhật - đó là cách gia phả vẫn vận hành.
+    //
+    // (trang_thai trong dữ liệu giữ nguyên vì nó điều khiển việc CHE
+    //  ngày/tháng sinh - bảo vệ riêng tư, khác với nhãn hiển thị này.)
+    if(daQuaTram(p)){
       return hang('Ngày mất',
         '<span class="vien-nho mat">Đã mất</span> '+
-        '<span class="thieu">— chưa có thông tin để cập nhật</span>');
+        '<span class="thieu">— chưa rõ năm mất</span>');
     }
 
-    if(tt === 'chua_ro'){
-      return hang('Tình trạng',
-        '<span class="vien-nho chua-ro">Chưa rõ</span> '+
-        '<span class="thieu">— chưa có thông tin để cập nhật</span>');
-    }
-
-    return hang('Tình trạng', '<span class="vien-nho song">Còn sống</span>');
+    return hang('Tình trạng',
+      '<span class="vien-nho chua-ro">Chưa rõ</span> '+
+      '<span class="thieu">— chưa có thông tin để cập nhật</span>');
   }
 
   const chaMe = [];
