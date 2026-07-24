@@ -961,6 +961,16 @@
     z-index:6;
   }
 
+  /* Huy hiệu "Đời N" trên trang cá nhân - bấm được để xem cả đời */
+  .vien-nho.doi-bam{
+    text-decoration:none;cursor:pointer;
+    transition:background .12s, border-color .12s;
+  }
+  .vien-nho.doi-bam:hover{
+    background:rgba(155,34,38,.08);
+    border-color:var(--son);
+  }
+
 </style>
 </head>
 <body>
@@ -1815,7 +1825,11 @@ function veCaNhan(p){
 
   // ngày tháng
   const meta = [];
-  meta.push('<span class="vien-nho doi">Đời '+(LAMA[p.doi]||p.doi)+'</span>');
+  // Huy hiệu đời: số Ả Rập cho dễ đọc (XVI khó nhận hơn 16).
+  // Bấm vào -> về danh sách, lọc sẵn đời đó.
+  meta.push('<a href="#" class="vien-nho doi doi-bam" '+
+    'onclick="xemCaDoi('+p.doi+');return false;" '+
+    'title="Xem tất cả người ở đời '+p.doi+'">Đời '+p.doi+'</a>');
   meta.push('<span class="vien-nho">'+(p.gioi==='M'?'Nam':p.gioi==='F'?'Nữ':'—')+'</span>');
   if(!p.huyet_thong) meta.push('<span class="vien-nho">'+(p.gioi==='F'?'Con dâu':'Con rể')+'</span>');
   if(p.trang_thai === 'con_song')      meta.push('<span class="vien-nho song">Còn sống</span>');
@@ -1928,7 +1942,7 @@ function veCaNhan(p){
     moiBoSung+
 
     '<div class="khoi">'+
-      '<div class="khoi-tieu">Thân thế</div>'+
+      '<div class="khoi-tieu">Thông tin</div>'+
       hang(p.trang_thai === 'da_mat' ? 'Ngày sinh' : 'Năm sinh',
            p.sinh ? esc(p.sinh)+' <span class="duong-lich">dương lịch</span>' : '')+
       hang('Nơi sinh sống', p.lap_nghiep ? esc(p.lap_nghiep) : '')+
@@ -1940,7 +1954,7 @@ function veCaNhan(p){
     // muon doc - gia pha khong chi la ngay thang.
     (p.ghi_chu
       ? '<div class="khoi">'+
-          '<div class="khoi-tieu">Ghi chú</div>'+
+          '<div class="khoi-tieu">Đôi nét về tiểu sử</div>'+
           '<div class="ghi-chu">'+esc(p.ghi_chu).replace(/\n/g,'<br>')+'</div>'+
         '</div>'
       : '')+
@@ -2427,7 +2441,7 @@ function veSoDo(){
       '<div class="sd-zoom">'+
         // Nhảy ra toàn cảnh - để biết mình đang ở đâu trong cả dòng họ
         '<button class="sd-nut nut-toan" onclick="tuSoDoRaToanCay()" '+
-          'title="Xem toàn bộ cây họ">Toàn họ</button>'+
+          'title="Xem toàn bộ cây họ">Xem toàn họ</button>'+
         '<button class="sd-nut" onclick="sodoZoom(-1)" title="Thu nhỏ">−</button>'+
         '<button class="sd-nut" onclick="sodoZoom(1)" title="Phóng to">+</button>'+
         '<button class="sd-nut" onclick="sodoVe()" title="Về giữa">⤾</button>'+
@@ -2691,6 +2705,30 @@ const TEN_TAM = 'PHẠM ĐÌNH QUỲNH';
 
 // Mở sơ đồ cây ở NGƯỜI ĐẦU của một đời — người huyết thống đầu tiên
 // theo thứ tự chi (giống cách danh sách sắp xếp).
+// Từ trang cá nhân bấm huy hiệu "Đời N" -> về danh sách, lọc sẵn đời N
+function xemCaDoi(doi){
+  LOC_DOI = doi;
+  TU_KHOA = '';
+  const tim = $('#tim');
+  if(tim) tim.value = '';
+  document.body.classList.remove('dang-tim');
+
+  // Đồng bộ nút lọc trên đầu trang cho khớp (nút chỉ tự sáng khi được bấm)
+  const loc = $('#loc');
+  if(loc){
+    [...loc.children].forEach(x=>x.setAttribute('aria-pressed','false'));
+    // Tìm theo NHÃN, không theo vị trí - phòng khi có đời trống,
+    // nút không được dựng, làm lệch thứ tự.
+    const nhan = (doi === 0) ? 'Tất cả' : 'Đời ' + doi;
+    const nut = [...loc.children].find(x=>x.textContent === nhan);
+    if(nut) nut.setAttribute('aria-pressed','true');
+  }
+  document.body.classList.toggle('co-loc-doi', doi !== 0);
+
+  location.hash = '';              // rời trang cá nhân -> dinhTuyen() gọi ve()
+  window.scrollTo(0,0);
+}
+
 function soDoDauDoi(doi){
   const sapChi = (a,b)=>{
     const ka=(a.khoa_sap||[]).join(','), kb=(b.khoa_sap||[]).join(',');
