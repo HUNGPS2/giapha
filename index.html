@@ -1814,14 +1814,25 @@ function phongTo(src, loi){
   document.body.appendChild(o);
 }
 
+// Đời 12 trở lên: đã khuất hết (chủ hộ xác nhận qua thực tế dòng họ).
+// Từ đời 13 trở xuống còn nhiều người đang sống -> không suy diễn.
+const DOI_DA_KHUAT = 12;
+
 // Sinh trên 100 năm trước mà không có năm mất -> coi như đã khuất.
 // Năm mất của những cụ này sẽ vĩnh viễn không tìm được; ghi "Chưa rõ"
 // nghe như lỗi nhập liệu. Nếu quả có cụ nào trên 100 tuổi còn sống,
 // con cháu cụ sẽ báo để cập nhật.
 function daQuaTram(p){
   const ns = (p.sinh || '').match(/\b(\d{4})\b/);
-  if(!ns) return false;                    // không có năm sinh -> không suy
-  return ((new Date()).getFullYear() - (+ns[1]) + 1) >= 100;
+  if(ns){
+    // Có năm sinh: trên 100 tuổi -> coi như đã khuất
+    return ((new Date()).getFullYear() - (+ns[1]) + 1) >= 100;
+  }
+  // KHÔNG có năm sinh lẫn năm mất: dựa vào ĐỜI.
+  // Đời 12 trở lên đã khuất hết (chủ hộ xác nhận). Ghi "Chưa rõ" cho
+  // cụ tổ đời 5, 6 thì vô lý - năm sinh của các cụ thất lạc từ lâu.
+  // Đời 13 trở xuống thì phần lớn đang sống -> giữ "Chưa rõ".
+  return p.doi > 0 && p.doi <= DOI_DA_KHUAT;
 }
 
 function veCaNhan(p){
