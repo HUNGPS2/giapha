@@ -972,6 +972,76 @@
     border-color:var(--son);
   }
 
+  /* ═══ LINK & MÀN GIỚI THIỆU DÒNG HỌ ═══ */
+  .gt-link-bao{margin-top:14px}
+  .gt-link{
+    display:inline-block;
+    color:var(--son);text-decoration:none;font-weight:600;
+    font-size:.95rem;
+    padding-bottom:2px;border-bottom:1px solid transparent;
+  }
+  .gt-link:hover{border-bottom-color:var(--son)}
+
+  body.xem-gt{overflow:hidden}
+  .man-gt{display:none}
+  body.xem-gt .man-gt{
+    display:block;
+    position:fixed;inset:0;z-index:160;
+    background:var(--giay);
+    overflow-y:auto;
+  }
+  .gt-thanh{
+    position:sticky;top:0;z-index:2;
+    background:var(--giay);
+    padding:14px 18px;border-bottom:1px solid var(--vien);
+  }
+  .gt-nut-ve{
+    background:#fff;border:1px solid var(--vien);border-radius:8px;
+    padding:8px 14px;font-size:.9rem;color:var(--son);
+    cursor:pointer;font-weight:600;
+    font-family:inherit;
+  }
+  .gt-nut-ve:hover{border-color:var(--son)}
+  .gt-noi-dung{
+    max-width:760px;margin:0 auto;padding:24px 20px 80px;
+    line-height:1.75;color:var(--muc);
+  }
+  .gt-noi-dung h1{
+    font-family:'Noto Serif',serif;font-size:1.7rem;color:var(--son);
+    margin:0 0 18px;line-height:1.25;
+  }
+  .gt-noi-dung h2{
+    font-family:'Noto Serif',serif;font-size:1.3rem;color:var(--muc);
+    margin:32px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--vien);
+  }
+  .gt-noi-dung h3{
+    font-family:'Noto Serif',serif;font-size:1.08rem;color:var(--son);
+    margin:22px 0 8px;
+  }
+  .gt-noi-dung p{margin:0 0 14px}
+  .gt-noi-dung blockquote{
+    margin:0 0 16px;padding:10px 16px;
+    background:rgba(176,140,63,.1);
+    border-left:3px solid var(--nhan);
+    border-radius:0 6px 6px 0;
+    color:var(--muc-nhat);font-size:.92rem;
+  }
+  .gt-noi-dung ul{margin:0 0 14px;padding-left:22px}
+  .gt-noi-dung li{margin-bottom:5px}
+  .gt-noi-dung img{
+    display:block;max-width:100%;height:auto;
+    margin:16px auto;border-radius:10px;
+    box-shadow:0 2px 12px rgba(36,30,24,.15);
+  }
+  .gt-noi-dung img + em{
+    display:block;text-align:center;font-size:.85rem;
+    color:var(--muc-nhat);margin:-8px 0 18px;
+  }
+  .gt-noi-dung hr{border:none;border-top:1px solid var(--vien);margin:28px 0}
+  .gt-noi-dung strong{color:var(--muc);font-weight:700}
+  .gt-noi-dung .gt-dang-tai{color:var(--muc-nhat);text-align:center;padding:40px}
+  .gt-noi-dung .gt-loi{color:var(--son);text-align:center;padding:40px}
+
 </style>
 </head>
 <body>
@@ -987,7 +1057,20 @@
       <span>·</span>
       <span><b id="tong-doi">—</b> đời</span>
     </div>
+    <div class="gt-link-bao">
+      <a href="#gioithieu" class="gt-link">Giới thiệu về dòng họ Phạm →</a>
+    </div>
   </header>
+
+  <!-- ====== MÀN GIỚI THIỆU DÒNG HỌ ====== -->
+  <div id="man-gt" class="man-gt">
+    <div class="gt-thanh">
+      <button class="gt-nut-ve" onclick="dongGioiThieu()">← Về gia phả</button>
+    </div>
+    <article id="gt-noi-dung" class="gt-noi-dung">
+      <p class="gt-dang-tai">Đang tải…</p>
+    </article>
+  </div>
 
   <!-- ====== MÀN DANH SÁCH ====== -->
   <div class="man-danh-sach">
@@ -1724,6 +1807,11 @@ function moNguoi(id){ location.hash = id; }
 
 function dinhTuyen(){
   const id = location.hash.slice(1);
+
+  // Hash #gioithieu -> mở màn giới thiệu dòng họ
+  if(id === 'gioithieu'){ moGioiThieu(); return; }
+  document.body.classList.remove('xem-gt');
+
   const nut = $('#mo-so-do');
   if(id && DL.nguoi[id]){
     veCaNhan(DL.nguoi[id]);
@@ -2065,6 +2153,89 @@ const TC_VC_KHE = 4;       // khe giữa vợ và chồng trong một cặp
 
 // moToanCay(canhId): mở toàn cảnh và ĐƯA canhId vào giữa khung.
 // Không truyền -> căn vào thủy tổ (đỉnh cây).
+// ═══════════════════════════════════════════════════════════════════
+//  MÀN GIỚI THIỆU DÒNG HỌ
+//  Đọc file gioithieu.md, chuyển Markdown -> HTML, hiển thị.
+//  Tách riêng khỏi gia phả: nội dung do chủ hộ tự sửa trong file .md.
+// ═══════════════════════════════════════════════════════════════════
+let GT_DA_TAI = false;
+
+function moGioiThieu(){
+  document.body.classList.add('xem-gt');
+  window.scrollTo(0,0);
+  if(GT_DA_TAI) return;              // đã tải rồi thì thôi, khỏi tải lại
+  const o = $('#gt-noi-dung');
+  fetch('gioithieu.md')
+    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.text(); })
+    .then(md=>{
+      o.innerHTML = mdSangHtml(md);
+      GT_DA_TAI = true;
+    })
+    .catch(()=>{
+      o.innerHTML = '<p class="gt-loi">Chưa tải được nội dung giới thiệu.<br>'+
+        '<small>Kiểm tra xem file gioithieu.md đã tải lên GitHub chưa.</small></p>';
+    });
+}
+
+function dongGioiThieu(){
+  document.body.classList.remove('xem-gt');
+  if(location.hash === '#gioithieu') history.replaceState(null,'',location.pathname);
+}
+
+// Chuyển Markdown -> HTML. Bộ đọc gọn, đủ dùng cho trang giới thiệu:
+// tiêu đề, đoạn văn, đậm/nghiêng, gạch đầu dòng, trích dẫn, ảnh, đường kẻ.
+function mdSangHtml(md){
+  const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Xử lý trong-dòng: ảnh, đậm, nghiêng (sau khi đã esc)
+  const trongDong = t => {
+    t = esc(t);
+    // ảnh: ![chú thích](đường dẫn) -> img + chú thích nghiêng bên dưới
+    t = t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
+      (m,alt,src)=>'<img src="'+src.trim()+'" alt="'+alt+'"><em>'+alt+'</em>');
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    return t;
+  };
+
+  const dong = md.replace(/\r\n/g,'\n').split('\n');
+  let html = '', trongUl = false, trongP = false;
+  const dongUl = () => { if(trongUl){ html+='</ul>'; trongUl=false; } };
+  const dongP  = () => { if(trongP){  html+='</p>';  trongP=false;  } };
+
+  for(let d of dong){
+    const t = d.trim();
+    if(t === ''){ dongP(); dongUl(); continue; }
+
+    if(t === '---' || t === '***'){ dongP(); dongUl(); html+='<hr>'; continue; }
+
+    let m;
+    if(m = t.match(/^(#{1,3})\s+(.*)$/)){
+      dongP(); dongUl();
+      const c = m[1].length;
+      html += '<h'+c+'>'+trongDong(m[2])+'</h'+c+'>';
+      continue;
+    }
+    if(t.startsWith('> ')){
+      dongP(); dongUl();
+      html += '<blockquote>'+trongDong(t.slice(2))+'</blockquote>';
+      continue;
+    }
+    if(t.startsWith('- ')){
+      dongP();
+      if(!trongUl){ html+='<ul>'; trongUl=true; }
+      html += '<li>'+trongDong(t.slice(2))+'</li>';
+      continue;
+    }
+    // đoạn văn thường (hoặc ảnh đứng riêng)
+    dongUl();
+    if(!trongP){ html+='<p>'; trongP=true; } else { html+=' '; }
+    html += trongDong(t);
+  }
+  dongP(); dongUl();
+  return html;
+}
+
 function moToanCay(canhId){
   const to = Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong);
   if(!to){ return; }
