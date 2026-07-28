@@ -1042,6 +1042,17 @@
   .gt-noi-dung .gt-dang-tai{color:var(--muc-nhat);text-align:center;padding:40px}
   .gt-noi-dung .gt-loi{color:var(--son);text-align:center;padding:40px}
 
+  /* Video YouTube nhúng trong trang giới thiệu - tỉ lệ 16:9, co theo màn hình */
+  .gt-video{
+    position:relative;width:100%;
+    aspect-ratio:16/9;
+    margin:18px 0;
+    border-radius:10px;overflow:hidden;
+    box-shadow:0 2px 12px rgba(36,30,24,.18);
+    background:#000;
+  }
+  .gt-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
 </style>
 </head>
 <body>
@@ -2182,6 +2193,16 @@ function dongGioiThieu(){
   if(location.hash === '#gioithieu') history.replaceState(null,'',location.pathname);
 }
 
+// Lấy mã video (11 ký tự) từ một link YouTube, nếu dòng CHỈ là link đó.
+// Trả về mã, hoặc null nếu không phải link YouTube đứng riêng.
+function layMaYouTube(t){
+  t = t.trim();
+  // Dòng phải CHỈ chứa link, không lẫn chữ khác
+  if(/\s/.test(t)) return null;
+  const m = t.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
 // Chuyển Markdown -> HTML. Bộ đọc gọn, đủ dùng cho trang giới thiệu:
 // tiêu đề, đoạn văn, đậm/nghiêng, gạch đầu dòng, trích dẫn, ảnh, đường kẻ.
 function mdSangHtml(md){
@@ -2227,6 +2248,18 @@ function mdSangHtml(md){
       html += '<li>'+trongDong(t.slice(2))+'</li>';
       continue;
     }
+    // Dòng chỉ chứa link YouTube -> nhúng video xem ngay trong trang.
+    // Nhận cả youtube.com/watch?v=... , youtu.be/... , /embed/... , shorts
+    const yt = layMaYouTube(t);
+    if(yt){
+      dongP(); dongUl();
+      html += '<div class="gt-video"><iframe src="https://www.youtube.com/embed/'+yt+'" '+
+        'title="Video" frameborder="0" allowfullscreen '+
+        'allow="accelerometer; autoplay; clipboard-write; encrypted-media; '+
+        'gyroscope; picture-in-picture"></iframe></div>';
+      continue;
+    }
+
     // đoạn văn thường (hoặc ảnh đứng riêng)
     dongUl();
     if(!trongP){ html+='<p>'; trongP=true; } else { html+=' '; }

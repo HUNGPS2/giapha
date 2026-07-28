@@ -1,6 +1,6 @@
 # Giới thiệu về dòng họ Phạm
 
-> Đây là khung mẫu. Người viết gia phả hãy thay nội dung trong này bằng thông tin thật.
+> Đây là khung mẫu. Bác Hùng thay nội dung trong này bằng thông tin thật.
 > Cách sửa: mở file `gioithieu.md` bằng Notepad (hoặc bất kỳ trình soạn thảo
 > nào), gõ nội dung, lưu lại, rồi tải lên GitHub như tải data.json.
 > Không cần biết HTML — chỉ gõ chữ bình thường. Vài mẹo trình bày ở cuối file.
@@ -48,3 +48,15 @@ Thủy tổ là cụ **Phạm Ngọc**. …
 
 ---
 
+## Ghi chú cách sửa (xóa phần này khi đã quen)
+
+Cách gõ để trình bày cho đẹp:
+
+- Một dấu `#` đầu dòng = tiêu đề lớn. `##` = mục. `###` = mục nhỏ.
+- Để trống một dòng giữa hai đoạn văn cho chúng tách ra.
+- `**chữ đậm**` -> **chữ đậm**. `*chữ nghiêng*` -> *chữ nghiêng*.
+- Gạch đầu dòng: viết `- ` (dấu trừ + dấu cách) đầu dòng.
+- Chèn ảnh: `![chú thích](anh/ten-file.jpg)` — ảnh phải nằm trong thư mục `anh/`.
+- Chèn video YouTube: dán link vào MỘT DÒNG RIÊNG (không viết chữ gì khác
+  trên dòng đó), ví dụ: `https://youtu.be/XXXXXXXX` — trang tự hiện video.
+- Đặt tên ảnh giới thiệu bắt đầu bằng `gt-` cho dễ phân biệt với ảnh chân dung.
