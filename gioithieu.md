@@ -1,9 +1,5 @@
 # Giới thiệu về dòng họ Phạm
 
-> Đây là khung mẫu. Bác thay nội dung trong này bằng thông tin thật.
-> Cách sửa: mở file `gioithieu.md` bằng Notepad (hoặc bất kỳ trình soạn thảo
-> nào), gõ nội dung, lưu lại, rồi tải lên GitHub như tải data.json.
-> Không cần biết HTML — chỉ gõ chữ bình thường. Vài mẹo trình bày ở cuối file.
 
 ## Họ Phạm ở Việt Nam
 
