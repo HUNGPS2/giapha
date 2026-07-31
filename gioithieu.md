@@ -10,6 +10,8 @@ Họ Phạm là một trong những dòng họ lớn và lâu đời ở Việt 
 
 Xem phim tư liệu về danh tướng Phạm Tu: https://youtu.be/eSY2EH3QYCA
 
+https://www.youtube.com/watch?v=B7y69r4my-8
+
 https://www.youtube.com/watch?v=EQBI-zYmiSs
 
 ## Họ Phạm Đình ở Cẩm Chế
