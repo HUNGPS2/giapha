@@ -1148,6 +1148,13 @@
   .qh-doi:hover{border-color:var(--son)}
 
 
+  .qh-qua{
+    font-size:1rem;line-height:1.7;color:var(--muc);
+    padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--vien);
+  }
+  .qh-qua b{color:var(--son)}
+
+
 </style>
 </head>
 <body>
@@ -3209,14 +3216,84 @@ function locQuanHe(tuKhoa){
   ).join('');
 }
 
+// Cha/mẹ - con
+function qhChaCon(cha, con){
+  const vaiCha = cha.gioi === 'F' ? 'Mẹ' : 'Cha';
+  const vaiCon = con.gioi === 'F' ? 'con gái' : 'con trai';
+  return '<div class="qh-vai"><b>'+esc(cha.ten)+'</b> là '+vaiCha.toLowerCase()+
+    ', <b>'+esc(con.ten)+'</b> là '+vaiCon+'.</div>';
+}
+
+// Một hoặc cả hai là dâu/rể -> xét qua người bạn đời trong họ
+function qhQuaBanDoi(idA, idB, aDauRe, bDauRe){
+  const A = DL.nguoi[idA], B = DL.nguoi[idB];
+
+  // Cả hai đều là dâu/rể -> chỉ nối được nếu vợ/chồng họ là anh em... phức tạp.
+  // Xử lý trường hợp thường gặp: MỘT người là dâu/rể.
+  if(aDauRe && bDauRe){
+    return '<p class="qh-khong">Cả hai đều là dâu hoặc rể (kết hôn vào họ). '+
+      'Quan hệ giữa họ tuỳ theo vai vế của người bạn đời — xin xem quan hệ '+
+      'giữa hai người bạn đời trong họ.</p>';
+  }
+
+  const dr   = aDauRe ? A : B;          // người dâu/rể
+  const drId = aDauRe ? idA : idB;
+  const kia  = aDauRe ? B : A;          // người còn lại (trong họ)
+  const kiaId= aDauRe ? idB : idA;
+
+  // Bạn đời của dâu/rể (người trong họ)
+  const banDoiId = (dr.vo_chong||[]).find(x=>DL.nguoi[x] && DL.nguoi[x].huyet_thong);
+  if(!banDoiId){
+    return '<p class="qh-khong">'+esc(dr.ten)+' là dâu/rể nhưng chưa rõ vợ/chồng '+
+      'trong họ, nên chưa xét được quan hệ.</p>';
+  }
+  const banDoi = DL.nguoi[banDoiId];
+
+  // Người kia có phải con của dâu/rể? (đã xử ở trên, nhưng phòng khi)
+  if((dr.con||[]).includes(kiaId)){
+    return qhChaCon(dr, kia);
+  }
+
+  // Xét quan hệ giữa BẠN ĐỜI và người kia, rồi diễn đạt theo phía dâu/rể
+  const cot = moTaQuanHe(banDoiId, kiaId);   // đệ quy: cả hai đều trong họ
+  return '<div class="qh-qua">'+esc(dr.ten)+' là '+
+    (dr.gioi==='F'?'vợ':'chồng')+' của <b>'+esc(banDoi.ten)+'</b>. '+
+    'Vai vế của '+esc(dr.ten)+' với '+esc(kia.ten)+' theo đúng vai của '+
+    esc(banDoi.ten)+':</div>'+ cot;
+}
+
 // Mô tả quan hệ thành lời
 function moTaQuanHe(idA, idB){
-  const r = tinhQuanHe(idA, idB);
   const A = DL.nguoi[idA], B = DL.nguoi[idB];
+
+  if(idA === idB) return '<p class="qh-loi">Đây là cùng một người.</p>';
+
+  // ─── QUAN HỆ TRỰC TIẾP (không cần tổ chung) ───
+  // Vợ/chồng của nhau
+  if((A.vo_chong||[]).includes(idB)){
+    return '<div class="qh-vai"><b>Vợ / chồng</b> của nhau.</div>';
+  }
+  // Cha/mẹ – con
+  if((A.con||[]).includes(idB)){
+    return qhChaCon(A, B);
+  }
+  if((B.con||[]).includes(idA)){
+    return qhChaCon(B, A);
+  }
+
+  // ─── MỘT NGƯỜI LÀ DÂU/RỂ ───
+  // Dâu/rể không có tổ họ Phạm -> quy về NGƯỜI BẠN ĐỜI (người trong họ)
+  // rồi xét, và ghi chú rằng vai vế là "theo bên vợ/chồng".
+  const aDauRe = !A.huyet_thong, bDauRe = !B.huyet_thong;
+  if(aDauRe || bDauRe){
+    return qhQuaBanDoi(idA, idB, aDauRe, bDauRe);
+  }
+
+  const r = tinhQuanHe(idA, idB);
   if(r.loi) return '<p class="qh-loi">'+r.loi+'</p>';
   if(!r.chung){
-    return '<p class="qh-khong">Hai người này <b>không cùng dòng máu</b> họ Phạm Đình '+
-      '(có thể một trong hai là dâu hoặc rể). Không xét được vai vế theo dòng họ.</p>';
+    return '<p class="qh-khong">Chưa xác định được quan hệ giữa hai người này '+
+      'trong dữ liệu hiện có.</p>';
   }
   const T = DL.nguoi[r.to];
   const chenh = r.doiA - r.doiB;
