@@ -1058,6 +1058,69 @@
     word-break:break-word;}
   .gt-noi-dung a:hover{text-decoration-color:var(--son)}
 
+  /* ═══ XEM QUAN HỆ HAI NGƯỜI ═══ */
+  .nut-qh{
+    background:#fff;border:1px solid var(--vien);border-radius:8px;
+    padding:8px 14px;font-size:.9rem;color:var(--son);
+    cursor:pointer;font-weight:600;font-family:inherit;
+    margin-left:8px;
+  }
+  .nut-qh:hover{border-color:var(--son)}
+
+  .man-qh{display:none}
+  body.xem-qh{overflow:hidden}
+  body.xem-qh .man-qh{
+    display:block;position:fixed;inset:0;z-index:170;
+    background:var(--giay);overflow-y:auto;
+  }
+  .qh-thanh{
+    position:sticky;top:0;z-index:2;background:var(--giay);
+    padding:14px 18px;border-bottom:1px solid var(--vien);
+  }
+  .qh-than{max-width:640px;margin:0 auto;padding:24px 20px 80px}
+  .qh-tieu{
+    font-family:'Noto Serif',serif;font-size:1.4rem;color:var(--son);
+    text-align:center;margin-bottom:24px;
+  }
+  .qh-doi-nguoi{
+    display:flex;align-items:center;gap:12px;
+    justify-content:center;flex-wrap:wrap;
+  }
+  .qh-nguoi-a, .qh-nguoi-b{flex:1;min-width:220px}
+  .qh-nhan{font-size:.78rem;color:var(--muc-nhat);margin-bottom:4px}
+  .qh-ten-a{
+    font-family:'Noto Serif',serif;font-size:1.05rem;font-weight:600;
+    color:var(--son);padding:10px 12px;
+    background:#fff;border:1px solid var(--vien);border-radius:8px;
+  }
+  .qh-vs{font-size:1.3rem;color:var(--nhan);flex:0 0 auto}
+  #qh-chon{
+    width:100%;padding:10px 12px;font-size:1rem;font-family:inherit;
+    border:1px solid var(--vien);border-radius:8px;background:#fff;
+    color:var(--muc);cursor:pointer;
+  }
+  #qh-chon:focus{outline:none;border-color:var(--son)}
+  .qh-ket-qua{
+    margin-top:28px;padding:20px;
+    background:#fff;border:1px solid var(--vien);border-radius:12px;
+    box-shadow:0 2px 10px rgba(36,30,24,.06);
+  }
+  .qh-to{
+    font-size:.95rem;color:var(--muc-nhat);
+    padding-bottom:12px;margin-bottom:12px;
+    border-bottom:1px solid var(--vien);
+  }
+  .qh-to b{color:var(--son)}
+  .qh-vai{font-size:1.1rem;line-height:1.7;color:var(--muc)}
+  .qh-vai b{color:var(--son)}
+  .qh-nhac{
+    margin-top:14px;font-size:.85rem;color:var(--muc-nhat);
+    font-style:italic;line-height:1.6;
+  }
+  .qh-khong, .qh-loi{font-size:1rem;line-height:1.7;color:var(--muc)}
+  .qh-khong b{color:var(--son)}
+
+
 </style>
 </head>
 <body>
@@ -1123,6 +1186,7 @@
 
   <div id="sodo" class="sodo"></div>
   <div id="toancay" class="toancay"></div>
+  <div id="man-qh" class="man-qh"></div>
 
   <footer>
     <div class="lien-he">
@@ -1827,6 +1891,7 @@ function dinhTuyen(){
   // Hash #gioithieu -> mở màn giới thiệu dòng họ
   if(id === 'gioithieu'){ moGioiThieu(); return; }
   document.body.classList.remove('xem-gt');
+  document.body.classList.remove('xem-qh');   // rời trang -> đóng màn quan hệ
 
   const nut = $('#mo-so-do');
   if(id && DL.nguoi[id]){
@@ -2064,6 +2129,7 @@ function veCaNhan(p){
     '<div class="thanh-tren">'+
       '<button class="quay-lai" onclick="location.hash=\'\'">← Về danh sách</button>'+
       '<button class="nut-so-do" onclick="moSoDo(\''+p.id+'\')">Sơ đồ cây từ người này →</button>'+
+      '<button class="nut-qh" onclick="moQuanHe(\''+p.id+'\')">Xem quan hệ với người khác →</button>'+
     '</div>'+
 
     '<div class="duong-doi">'+duong+'</div>'+
@@ -2990,6 +3056,131 @@ function soDoDauDoi(doi){
   const nam = trongHo.filter(p => p.gioi === 'M').sort(sapChi);
   const ds  = nam.length ? nam : trongHo.sort(sapChi);
   if(ds.length) moSoDo(ds[0].id);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  XEM QUAN HỆ GIỮA HAI NGƯỜI
+//  Cho người họ xa gặp nhau biết gọi nhau thế nào: chỉ ra tổ chung gần
+//  nhất và ai vai trên / vai dưới / ngang hàng (theo ĐỜI).
+// ═══════════════════════════════════════════════════════════════════
+
+// Cha/mẹ HUYẾT THỐNG (người trong họ) - để truy tổ đúng đường máu.
+// Con của rể thì truy qua mẹ; con của dâu thì truy qua cha.
+function chaMeHuyet(p){
+  if(p.cha && DL.nguoi[p.cha] && DL.nguoi[p.cha].huyet_thong) return p.cha;
+  if(p.me  && DL.nguoi[p.me]  && DL.nguoi[p.me].huyet_thong)  return p.me;
+  if(p.cha && DL.nguoi[p.cha]) return p.cha;   // cả hai không rõ -> ưu tiên cha
+  if(p.me  && DL.nguoi[p.me])  return p.me;
+  return null;
+}
+
+// Đường từ một người ngược lên thủy tổ (theo huyết thống)
+function duongLenTo(id){
+  const path = []; let cur = id, g = 0;
+  while(cur && g++ < 40){
+    const p = DL.nguoi[cur]; if(!p) break;
+    path.push(cur);
+    cur = chaMeHuyet(p);
+  }
+  return path;
+}
+
+// Tính quan hệ giữa A và B
+function tinhQuanHe(idA, idB){
+  if(idA === idB) return { loi: 'Đây là cùng một người.' };
+  const pathA = duongLenTo(idA);
+  const setB  = new Set(duongLenTo(idB));
+  let to = null;
+  for(const x of pathA){ if(setB.has(x)){ to = x; break; } }
+  if(!to) return { chung: false };
+
+  const A = DL.nguoi[idA], B = DL.nguoi[idB];
+  return { chung: true, to, doiA: A.doi, doiB: B.doi };
+}
+
+function moQuanHe(idA){
+  QH_A = idA;
+  document.body.classList.add('xem-qh');
+  veQuanHe();
+}
+
+function dongQuanHe(){
+  document.body.classList.remove('xem-qh');
+}
+
+let QH_A = null, QH_B = null;
+
+function veQuanHe(){
+  const A = DL.nguoi[QH_A];
+  const o = $('#man-qh');
+
+  // Danh sách người để chọn làm người thứ hai (chỉ huyết thống - dâu/rể
+  // không có tổ chung nên không xét vai theo dòng máu)
+  const ds = Object.values(DL.nguoi)
+    .filter(p => p.huyet_thong && p.id !== QH_A)
+    .sort((a,b)=> a.doi - b.doi || (a.thu_tu||0) - (b.thu_tu||0));
+
+  let ketQua = '';
+  if(QH_B){
+    ketQua = moTaQuanHe(QH_A, QH_B);
+  }
+
+  o.innerHTML =
+    '<div class="qh-thanh">'+
+      '<button class="quay-lai" onclick="dongQuanHe()">← Quay lại</button>'+
+    '</div>'+
+    '<div class="qh-than">'+
+      '<div class="qh-tieu">Xem quan hệ họ hàng</div>'+
+      '<div class="qh-doi-nguoi">'+
+        '<div class="qh-nguoi-a">'+
+          '<div class="qh-nhan">Người thứ nhất</div>'+
+          '<div class="qh-ten-a">'+esc(A.ten)+'</div>'+
+        '</div>'+
+        '<div class="qh-vs">↔</div>'+
+        '<div class="qh-nguoi-b">'+
+          '<div class="qh-nhan">Người thứ hai</div>'+
+          '<select id="qh-chon" onchange="QH_B=this.value; veQuanHe()">'+
+            '<option value="">— Chọn người —</option>'+
+            ds.map(p=>'<option value="'+p.id+'"'+(p.id===QH_B?' selected':'')+'>'+
+              esc(p.ten)+' (đời '+p.doi+')</option>').join('')+
+          '</select>'+
+        '</div>'+
+      '</div>'+
+      (ketQua ? '<div class="qh-ket-qua">'+ketQua+'</div>' : '')+
+    '</div>';
+}
+
+// Mô tả quan hệ thành lời
+function moTaQuanHe(idA, idB){
+  const r = tinhQuanHe(idA, idB);
+  const A = DL.nguoi[idA], B = DL.nguoi[idB];
+  if(r.loi) return '<p class="qh-loi">'+r.loi+'</p>';
+  if(!r.chung){
+    return '<p class="qh-khong">Hai người này <b>không cùng dòng máu</b> họ Phạm Đình '+
+      '(có thể một trong hai là dâu hoặc rể). Không xét được vai vế theo dòng họ.</p>';
+  }
+  const T = DL.nguoi[r.to];
+  const chenh = r.doiA - r.doiB;
+  let vai;
+  if(chenh === 0){
+    vai = '<b>ngang vai</b> — cùng thuộc đời '+r.doiA+', xưng hô như anh/chị/em '+
+          '(tùy tuổi mà phân trên dưới).';
+  } else if(chenh < 0){
+    const n = -chenh;
+    vai = '<b>'+esc(A.ten)+' vai trên</b>, hơn '+n+' đời. '+
+          esc(B.ten)+' thuộc hàng '+(n===1?'con/cháu':n===2?'cháu':'cháu chắt')+
+          ' so với '+esc(A.ten)+'.';
+  } else {
+    const n = chenh;
+    vai = '<b>'+esc(A.ten)+' vai dưới</b>, kém '+n+' đời. '+
+          esc(A.ten)+' thuộc hàng '+(n===1?'con/cháu':n===2?'cháu':'cháu chắt')+
+          ' so với '+esc(B.ten)+'.';
+  }
+
+  return '<div class="qh-to">Tổ chung gần nhất: <b>'+esc(T.ten)+'</b> (đời '+T.doi+')</div>'+
+    '<div class="qh-vai">'+vai+'</div>'+
+    '<div class="qh-nhac">Cách xưng hô cụ thể còn tùy tuổi tác và tập quán, '+
+    'nhưng đây là vai vế theo dòng họ để bà con tiện gọi nhau.</div>';
 }
 
 function timTam(){
