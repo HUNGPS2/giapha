@@ -3247,8 +3247,8 @@ function locQuanHe(tuKhoa){
 function qhChaCon(cha, con){
   const vaiCha = cha.gioi === 'F' ? 'Mẹ' : 'Cha';
   const vaiCon = con.gioi === 'F' ? 'con gái' : 'con trai';
-  return '<div class="qh-vai"><b>'+esc(cha.ten)+'</b> là '+vaiCha.toLowerCase()+
-    ', <b>'+esc(con.ten)+'</b> là '+vaiCon+'.</div>';
+  return '<div class="qh-vai"><b>'+esc(tenPhanBiet(cha))+'</b> là '+vaiCha.toLowerCase()+
+    ', <b>'+esc(tenPhanBiet(con))+'</b> là '+vaiCon+'.</div>';
 }
 
 // Một hoặc cả hai là dâu/rể -> xét qua người bạn đời trong họ
@@ -3271,7 +3271,7 @@ function qhQuaBanDoi(idA, idB, aDauRe, bDauRe){
   // Bạn đời của dâu/rể (người trong họ)
   const banDoiId = (dr.vo_chong||[]).find(x=>DL.nguoi[x] && DL.nguoi[x].huyet_thong);
   if(!banDoiId){
-    return '<p class="qh-khong">'+esc(dr.ten)+' là dâu/rể nhưng chưa rõ vợ/chồng '+
+    return '<p class="qh-khong">'+esc(tenPhanBiet(dr))+' là dâu/rể nhưng chưa rõ vợ/chồng '+
       'trong họ, nên chưa xét được quan hệ.</p>';
   }
   const banDoi = DL.nguoi[banDoiId];
@@ -3283,10 +3283,10 @@ function qhQuaBanDoi(idA, idB, aDauRe, bDauRe){
 
   // Xét quan hệ giữa BẠN ĐỜI và người kia, rồi diễn đạt theo phía dâu/rể
   const cot = moTaQuanHe(banDoiId, kiaId);   // đệ quy: cả hai đều trong họ
-  return '<div class="qh-qua">'+esc(dr.ten)+' là '+
-    (dr.gioi==='F'?'vợ':'chồng')+' của <b>'+esc(banDoi.ten)+'</b>. '+
-    'Vai vế của '+esc(dr.ten)+' với '+esc(kia.ten)+' theo đúng vai của '+
-    esc(banDoi.ten)+':</div>'+ cot;
+  return '<div class="qh-qua">'+esc(tenPhanBiet(dr))+' là '+
+    (dr.gioi==='F'?'vợ':'chồng')+' của <b>'+esc(tenPhanBiet(banDoi))+'</b>. '+
+    'Vai vế của '+esc(tenPhanBiet(dr))+' với '+esc(tenPhanBiet(kia))+' theo đúng vai của '+
+    esc(tenPhanBiet(banDoi))+':</div>'+ cot;
 }
 
 // Mô tả quan hệ thành lời
@@ -3332,9 +3332,9 @@ function moTaQuanHe(idA, idB){
     const duoi = chenh < 0 ? B : A;
     const n = Math.abs(chenh);
     const hang = n===1 ? 'con/cháu' : n===2 ? 'cháu' : n===3 ? 'cháu chắt' : 'hàng dưới '+n+' đời';
-    vai = '<b>'+esc(tren.ten)+' vai trên</b> (đời '+tren.doi+'), '+
-          esc(duoi.ten)+' vai dưới (đời '+duoi.doi+'), cách nhau '+n+' đời. '+
-          esc(duoi.ten)+' thuộc hàng '+hang+' so với '+esc(tren.ten)+'.';
+    vai = '<b>'+esc(tenPhanBiet(tren))+' vai trên</b> (đời '+tren.doi+'), '+
+          esc(tenPhanBiet(duoi))+' vai dưới (đời '+duoi.doi+'), cách nhau '+n+' đời. '+
+          esc(tenPhanBiet(duoi))+' thuộc hàng '+hang+' so với '+esc(tenPhanBiet(tren))+'.';
   } else {
     // CÙNG ĐỜI -> theo TẬP QUÁN VIỆT: xét CHI (nhánh) trước, tuổi sau.
     const cA = r.chiA, cB = r.chiB;
@@ -3350,10 +3350,10 @@ function moTaQuanHe(idA, idB){
         const aTren = ttA < ttB;
         const tren = aTren ? A : B, duoi = aTren ? B : A;
         const chiTren = aTren ? cA : cB;
-        vai = '<b>'+esc(tren.ten)+' vai trên</b>, '+esc(duoi.ten)+' vai dưới. '+
-              'Cùng đời '+r.doiA+', nhưng '+esc(tren.ten)+' thuộc chi trưởng hơn '+
-              '(chi cụ '+esc(DL.nguoi[chiTren].ten)+'), nên '+esc(duoi.ten)+
-              ' gọi '+esc(tren.ten)+' là anh/chị — <b>không kể tuổi tác</b>.';
+        vai = '<b>'+esc(tenPhanBiet(tren))+' vai trên</b>, '+esc(tenPhanBiet(duoi))+' vai dưới. '+
+              'Cùng đời '+r.doiA+', nhưng '+esc(tenPhanBiet(tren))+' thuộc chi trưởng hơn '+
+              '(chi cụ '+esc(tenPhanBiet(DL.nguoi[chiTren]))+'), nên '+esc(tenPhanBiet(duoi))+
+              ' gọi '+esc(tenPhanBiet(tren))+' là anh/chị — <b>không kể tuổi tác</b>.';
         nhac = 'Theo tập quán, người ở chi trưởng hơn là vai anh/chị dù ít tuổi hơn. '+
                'Tuổi chỉ xét khi hai người cùng một chi.';
       } else {
@@ -3366,7 +3366,7 @@ function moTaQuanHe(idA, idB){
       if(nsA && nsB && nsA !== nsB){
         const tren = nsA < nsB ? A : B, duoi = nsA < nsB ? B : A;
         vai = '<b>ngang vai</b> — cùng đời '+r.doiA+' (anh em gần). '+
-              esc(tren.ten)+' nhiều tuổi hơn nên là anh/chị, '+esc(duoi.ten)+' là em.';
+              esc(tenPhanBiet(tren))+' nhiều tuổi hơn nên là anh/chị, '+esc(tenPhanBiet(duoi))+' là em.';
       } else {
         vai = '<b>ngang vai</b> — cùng đời '+r.doiA+', anh em gần, '+
               'xưng hô anh/chị/em theo tuổi.';
@@ -3374,7 +3374,7 @@ function moTaQuanHe(idA, idB){
     }
   }
 
-  return '<div class="qh-to">Tổ chung gần nhất: <b>'+esc(T.ten)+'</b> (đời '+T.doi+')</div>'+
+  return '<div class="qh-to">Tổ chung gần nhất: <b>'+esc(tenPhanBiet(T))+'</b> (đời '+T.doi+')</div>'+
     '<div class="qh-vai">'+vai+'</div>'+
     '<div class="qh-nhac">'+(nhac || 'Đây là vai vế theo dòng họ để bà con tiện gọi nhau.')+'</div>';
 }
