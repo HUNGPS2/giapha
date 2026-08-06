@@ -1383,6 +1383,8 @@ Promise.all([
 ])
   .then(([d, a])=>{
     DL = d;
+    tinhTenTrung();      // phát hiện tên bị trùng -> cần thêm "(con cụ ...)"
+
     // anh.json co hai muc: chan dung va tu lieu, TACH BACH.
     // Ban cu chi la mot object phang -> van doc duoc, coi la chan dung.
     ANH = a.chan_dung || a || {};
@@ -1478,6 +1480,31 @@ function nutLoc(nhan, doi){
 }
 
 // ============ Danh sách ============
+// Bỏ tiền tố thứ tự ("XI.1.", "5.") để so tên thuần
+function tenThuan(t){ return (t||'').replace(/^[IVX]+\.\d+\.\s*|^\d+\.\s*/,'').trim(); }
+
+// Tập các tên bị TRÙNG (2+ người cùng tên thuần). Tính một lần lúc nạp.
+let TEN_TRUNG = new Set();
+function tinhTenTrung(){
+  const dem = {};
+  for(const p of Object.values(DL.nguoi)){
+    const t = tenThuan(p.ten);
+    dem[t] = (dem[t]||0) + 1;
+  }
+  TEN_TRUNG = new Set(Object.keys(dem).filter(t => dem[t] > 1));
+}
+
+// Tên để HIỂN THỊ. Nếu tên bị trùng -> thêm "(con cụ [tên cha/mẹ])"
+// để phân biệt. Người không trùng thì giữ nguyên cho gọn.
+function tenPhanBiet(p){
+  if(!TEN_TRUNG.has(tenThuan(p.ten))) return p.ten;
+  // Cha huyết thống, không có thì mẹ
+  const chaId = (p.cha && DL.nguoi[p.cha]) ? p.cha
+              : (p.me  && DL.nguoi[p.me])  ? p.me : null;
+  if(!chaId) return p.ten;
+  return p.ten + ' (con cụ ' + tenThuan(DL.nguoi[chaId].ten) + ')';
+}
+
 function ve(){
   const ng = Object.values(DL.nguoi);
   let kq = ng;
@@ -2171,7 +2198,7 @@ function veCaNhan(p){
     '<div class="hs-dau">'+
       chanDung(p)+
       '<div class="hs-chu">'+
-        '<div class="hs-ten">'+esc(p.ten)+'</div>'+
+        '<div class="hs-ten">'+esc(tenPhanBiet(p))+'</div>'+
         '<div class="hs-meta">'+meta.join('')+'</div>'+
       '</div>'+
     '</div>'+
@@ -3177,13 +3204,13 @@ function veQuanHe(){
       '<div class="qh-doi-nguoi">'+
         '<div class="qh-nguoi-a">'+
           '<div class="qh-nhan">Người thứ nhất</div>'+
-          '<div class="qh-ten-a">'+esc(A.ten)+'</div>'+
+          '<div class="qh-ten-a">'+esc(tenPhanBiet(A))+'</div>'+
         '</div>'+
         '<div class="qh-vs">↔</div>'+
         '<div class="qh-nguoi-b">'+
           '<div class="qh-nhan">Người thứ hai</div>'+
           (QH_B
-            ? '<div class="qh-da-chon">'+esc(DL.nguoi[QH_B].ten)+
+            ? '<div class="qh-da-chon">'+esc(tenPhanBiet(DL.nguoi[QH_B]))+
               ' <button class="qh-doi" onclick="QH_B=null;veQuanHe()">đổi</button></div>'
             : '<input id="qh-tim" type="search" placeholder="Gõ tên để tìm…" '+
               'autocomplete="off" oninput="locQuanHe(this.value)">'+
@@ -3212,7 +3239,7 @@ function locQuanHe(tuKhoa){
   if(!ds.length){ kq.innerHTML = '<div class="qh-khong-thay">Không tìm thấy ai.</div>'; return; }
   kq.innerHTML = ds.map(p =>
     '<div class="qh-goi-y-o" onclick="QH_B=\''+p.id+'\';veQuanHe()">'+
-      esc(p.ten)+' <span class="qh-goi-y-doi">đời '+p.doi+'</span></div>'
+      esc(tenPhanBiet(p))+' <span class="qh-goi-y-doi">đời '+p.doi+'</span></div>'
   ).join('');
 }
 
