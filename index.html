@@ -1121,6 +1121,33 @@
   .qh-khong b{color:var(--son)}
 
 
+  #qh-tim{
+    width:100%;padding:10px 12px;font-size:1rem;font-family:inherit;
+    border:1px solid var(--vien);border-radius:8px;background:#fff;color:var(--muc);
+  }
+  #qh-tim:focus{outline:none;border-color:var(--son)}
+  .qh-goi-y{margin-top:6px}
+  .qh-goi-y-o{
+    padding:9px 12px;background:#fff;border:1px solid var(--vien);
+    border-radius:7px;margin-bottom:5px;cursor:pointer;font-size:.95rem;
+  }
+  .qh-goi-y-o:hover{border-color:var(--son);background:rgba(155,34,38,.04)}
+  .qh-goi-y-doi{color:var(--muc-nhat);font-size:.82rem}
+  .qh-khong-thay{color:var(--muc-nhat);font-size:.9rem;padding:8px}
+  .qh-da-chon{
+    font-family:'Noto Serif',serif;font-size:1.05rem;font-weight:600;
+    color:var(--son);padding:10px 12px;
+    background:#fff;border:1px solid var(--vien);border-radius:8px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .qh-doi{
+    font-family:inherit;font-size:.8rem;font-weight:400;
+    color:var(--son);background:none;border:1px solid var(--vien);
+    border-radius:6px;padding:3px 10px;cursor:pointer;
+  }
+  .qh-doi:hover{border-color:var(--son)}
+
+
 </style>
 </head>
 <body>
@@ -3089,13 +3116,22 @@ function duongLenTo(id){
 function tinhQuanHe(idA, idB){
   if(idA === idB) return { loi: 'Đây là cùng một người.' };
   const pathA = duongLenTo(idA);
-  const setB  = new Set(duongLenTo(idB));
-  let to = null;
-  for(const x of pathA){ if(setB.has(x)){ to = x; break; } }
+  const pathB = duongLenTo(idB);
+  const setB  = new Set(pathB);
+  let to = null, iA = -1;
+  for(let i=0;i<pathA.length;i++){ if(setB.has(pathA[i])){ to = pathA[i]; iA = i; break; } }
   if(!to) return { chung: false };
+  const iB = pathB.indexOf(to);
 
   const A = DL.nguoi[idA], B = DL.nguoi[idB];
-  return { chung: true, to, doiA: A.doi, doiB: B.doi };
+  return {
+    chung: true, to,
+    doiA: A.doi, doiB: B.doi,
+    // Con của tổ chung nằm trên đường mỗi người = ĐẦU NHÁNH (chi) của họ.
+    // Null nghĩa là chính người đó là tổ chung.
+    chiA: iA > 0 ? pathA[iA-1] : null,
+    chiB: iB > 0 ? pathB[iB-1] : null
+  };
 }
 
 function moQuanHe(idA){
@@ -3139,15 +3175,38 @@ function veQuanHe(){
         '<div class="qh-vs">↔</div>'+
         '<div class="qh-nguoi-b">'+
           '<div class="qh-nhan">Người thứ hai</div>'+
-          '<select id="qh-chon" onchange="QH_B=this.value; veQuanHe()">'+
-            '<option value="">— Chọn người —</option>'+
-            ds.map(p=>'<option value="'+p.id+'"'+(p.id===QH_B?' selected':'')+'>'+
-              esc(p.ten)+' (đời '+p.doi+')</option>').join('')+
-          '</select>'+
+          (QH_B
+            ? '<div class="qh-da-chon">'+esc(DL.nguoi[QH_B].ten)+
+              ' <button class="qh-doi" onclick="QH_B=null;veQuanHe()">đổi</button></div>'
+            : '<input id="qh-tim" type="search" placeholder="Gõ tên để tìm…" '+
+              'autocomplete="off" oninput="locQuanHe(this.value)">'+
+              '<div id="qh-goi-y" class="qh-goi-y"></div>')+
         '</div>'+
       '</div>'+
       (ketQua ? '<div class="qh-ket-qua">'+ketQua+'</div>' : '')+
     '</div>';
+}
+
+// Năm sinh dạng số (để so tuổi anh em ruột), 0 nếu không có
+function namSinhSo(p){
+  const m = (p.sinh||'').match(/\b(\d{4})\b/);
+  return m ? +m[1] : 0;
+}
+
+// Lọc danh sách người thứ hai theo tên gõ vào
+function locQuanHe(tuKhoa){
+  const kq = $('#qh-goi-y');
+  const tk = boDau((tuKhoa||'').trim());
+  if(!tk){ kq.innerHTML = ''; return; }
+  const ds = Object.values(DL.nguoi)
+    .filter(p => p.huyet_thong && p.id !== QH_A && boDau(p.ten).includes(tk))
+    .sort((a,b)=> a.doi - b.doi || (a.thu_tu||0)-(b.thu_tu||0))
+    .slice(0, 12);
+  if(!ds.length){ kq.innerHTML = '<div class="qh-khong-thay">Không tìm thấy ai.</div>'; return; }
+  kq.innerHTML = ds.map(p =>
+    '<div class="qh-goi-y-o" onclick="QH_B=\''+p.id+'\';veQuanHe()">'+
+      esc(p.ten)+' <span class="qh-goi-y-doi">đời '+p.doi+'</span></div>'
+  ).join('');
 }
 
 // Mô tả quan hệ thành lời
@@ -3161,26 +3220,59 @@ function moTaQuanHe(idA, idB){
   }
   const T = DL.nguoi[r.to];
   const chenh = r.doiA - r.doiB;
-  let vai;
-  if(chenh === 0){
-    vai = '<b>ngang vai</b> — cùng thuộc đời '+r.doiA+', xưng hô như anh/chị/em '+
-          '(tùy tuổi mà phân trên dưới).';
-  } else if(chenh < 0){
-    const n = -chenh;
-    vai = '<b>'+esc(A.ten)+' vai trên</b>, hơn '+n+' đời. '+
-          esc(B.ten)+' thuộc hàng '+(n===1?'con/cháu':n===2?'cháu':'cháu chắt')+
-          ' so với '+esc(A.ten)+'.';
+  let vai, nhac = '';
+
+  if(chenh !== 0){
+    // KHÁC ĐỜI -> vai trên/dưới rõ ràng theo đời, không cần xét chi.
+    const tren = chenh < 0 ? A : B;
+    const duoi = chenh < 0 ? B : A;
+    const n = Math.abs(chenh);
+    const hang = n===1 ? 'con/cháu' : n===2 ? 'cháu' : n===3 ? 'cháu chắt' : 'hàng dưới '+n+' đời';
+    vai = '<b>'+esc(tren.ten)+' vai trên</b> (đời '+tren.doi+'), '+
+          esc(duoi.ten)+' vai dưới (đời '+duoi.doi+'), cách nhau '+n+' đời. '+
+          esc(duoi.ten)+' thuộc hàng '+hang+' so với '+esc(tren.ten)+'.';
   } else {
-    const n = chenh;
-    vai = '<b>'+esc(A.ten)+' vai dưới</b>, kém '+n+' đời. '+
-          esc(A.ten)+' thuộc hàng '+(n===1?'con/cháu':n===2?'cháu':'cháu chắt')+
-          ' so với '+esc(B.ten)+'.';
+    // CÙNG ĐỜI -> theo TẬP QUÁN VIỆT: xét CHI (nhánh) trước, tuổi sau.
+    const cA = r.chiA, cB = r.chiB;
+
+    // Nếu tổ chung LÀ CHA/MẸ CHUNG của cả hai (điểm rẽ = chính hai người)
+    // -> anh em ruột (hoặc anh em con chú con bác gần), xét TUỔI.
+    const anhEmRuot = (cA === idA && cB === idB);
+
+    if(!anhEmRuot && cA && cB && cA !== cB){
+      const ttA = DL.nguoi[cA].thu_tu || 0;
+      const ttB = DL.nguoi[cB].thu_tu || 0;
+      if(ttA !== ttB){
+        const aTren = ttA < ttB;
+        const tren = aTren ? A : B, duoi = aTren ? B : A;
+        const chiTren = aTren ? cA : cB;
+        vai = '<b>'+esc(tren.ten)+' vai trên</b>, '+esc(duoi.ten)+' vai dưới. '+
+              'Cùng đời '+r.doiA+', nhưng '+esc(tren.ten)+' thuộc chi trưởng hơn '+
+              '(chi cụ '+esc(DL.nguoi[chiTren].ten)+'), nên '+esc(duoi.ten)+
+              ' gọi '+esc(tren.ten)+' là anh/chị — <b>không kể tuổi tác</b>.';
+        nhac = 'Theo tập quán, người ở chi trưởng hơn là vai anh/chị dù ít tuổi hơn. '+
+               'Tuổi chỉ xét khi hai người cùng một chi.';
+      } else {
+        vai = '<b>ngang vai</b> — cùng đời '+r.doiA+', hai chi ngang nhau, '+
+              'xưng hô anh/chị/em theo tuổi.';
+      }
+    } else {
+      // Anh em ruột / cùng một chi -> xét tuổi (dùng năm sinh nếu có)
+      const nsA = namSinhSo(A), nsB = namSinhSo(B);
+      if(nsA && nsB && nsA !== nsB){
+        const tren = nsA < nsB ? A : B, duoi = nsA < nsB ? B : A;
+        vai = '<b>ngang vai</b> — cùng đời '+r.doiA+' (anh em gần). '+
+              esc(tren.ten)+' nhiều tuổi hơn nên là anh/chị, '+esc(duoi.ten)+' là em.';
+      } else {
+        vai = '<b>ngang vai</b> — cùng đời '+r.doiA+', anh em gần, '+
+              'xưng hô anh/chị/em theo tuổi.';
+      }
+    }
   }
 
   return '<div class="qh-to">Tổ chung gần nhất: <b>'+esc(T.ten)+'</b> (đời '+T.doi+')</div>'+
     '<div class="qh-vai">'+vai+'</div>'+
-    '<div class="qh-nhac">Cách xưng hô cụ thể còn tùy tuổi tác và tập quán, '+
-    'nhưng đây là vai vế theo dòng họ để bà con tiện gọi nhau.</div>';
+    '<div class="qh-nhac">'+(nhac || 'Đây là vai vế theo dòng họ để bà con tiện gọi nhau.')+'</div>';
 }
 
 function timTam(){
