@@ -1155,7 +1155,7 @@
   .qh-qua b{color:var(--son)}
 
 
-  /* ═══ CHẾ ĐỘ RIÊNG TƯ (đăng nhập ẩn qua #riengtu) ═══ */
+  /* ═══ CHẾ ĐỘ RIÊNG TƯ (đăng nhập ẩn qua #h) ═══ */
   .man-rieng{
     position:fixed;inset:0;z-index:200;
     background:rgba(36,30,24,.55);
@@ -1443,6 +1443,10 @@ Promise.all([
   });
 
 function khoiDong(){
+  // Người chưa có tên (thường từ nhánh ngoại nhập thiếu) -> hiện "(chưa rõ)"
+  for(const p of Object.values(DL.nguoi)){
+    if(!p.ten || !p.ten.trim()) p.ten = '(chưa rõ)';
+  }
   const ng = Object.values(DL.nguoi);
   const maxDoi = Math.max(...ng.map(p=>p.doi));
   $('#tong-nguoi').textContent = ng.length;
@@ -1539,6 +1543,7 @@ function tinhTenTrung(){
 // Tên để HIỂN THỊ. Nếu tên bị trùng -> thêm "(con cụ [tên cha/mẹ])"
 // để phân biệt. Người không trùng thì giữ nguyên cho gọn.
 function tenPhanBiet(p){
+  if(!p.ten || !p.ten.trim()) return '(chưa rõ)';
   if(!TEN_TRUNG.has(tenThuan(p.ten))) return p.ten;
   // Cha huyết thống, không có thì mẹ
   const chaId = (p.cha && DL.nguoi[p.cha]) ? p.cha
@@ -1993,7 +1998,7 @@ function dinhTuyen(){
 
   // Hash #gioithieu -> mở màn giới thiệu dòng họ
   if(id === 'gioithieu'){ moGioiThieu(); return; }
-  if(id === 'riengtu'){ moDangNhap(); return; }
+  if(id === 'h'){ moDangNhap(); return; }
   document.body.classList.remove('xem-gt');
   document.body.classList.remove('xem-qh');   // rời trang -> đóng màn quan hệ
 
@@ -2747,7 +2752,7 @@ function oNguoi(p, tam, coChau, dangXo){
     '<div class="sd-o '+lopO(p)+(tam ? ' tam' : '')+
         (coChau ? ' co-chau' : '')+(dangXo ? ' dang-xo' : '')+
         '" data-id="'+p.id+'">'+
-      '<div class="sd-ten">'+esc(p.ten)+'</div>'+
+      '<div class="sd-ten">'+esc(p.ten && p.ten.trim() ? p.ten : '(chưa rõ)')+'</div>'+
       (ngay ? '<div class="sd-ngay">'+ngay+'</div>' : '')+
       // Nguoi con co con -> hien mui ten nho, bam de xo/thu cot chau doc
       (coChau ? '<div class="sd-mui-ten">'+(dangXo ? '▲' : '▼')+'</div>' : '')+
@@ -3423,7 +3428,7 @@ function moTaQuanHe(idA, idB){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  CHẾ ĐỘ RIÊNG TƯ (chỉ chủ hộ) — mở qua #riengtu + mật khẩu
+//  CHẾ ĐỘ RIÊNG TƯ (chỉ chủ hộ) — mở qua #.... + mật khẩu
 //  Mở ra ngày/tháng sinh đầy đủ của người còn sống (vốn bị che).
 //  Đây là RÀO NHẸ chống tò mò: dữ liệu chi tiết ở file chitiet.json,
 //  trang thường không tải. Người rành kỹ thuật vẫn xem được file đó.
@@ -3431,7 +3436,7 @@ function moTaQuanHe(idA, idB){
 
 // Mã BĂM của mật khẩu (không lưu mật khẩu thật). Đổi mã này để đổi mật khẩu:
 // mở Console trình duyệt, chạy:  await bamMk('mật-khẩu-mới')  rồi dán kết quả vào đây.
-const MK_BAM = '1f2d4b1dcb84dc7639d810d325ff611c64452901b7aeaafaf6270d1eb664a405';   // mật khẩu tạm: hophamdinh2025
+const MK_BAM = 'aaa9402664f1a41f40ebbc52c9993eb66aeb366602958fdfaa283b71e64db123';   // mật khẩu tạm: hophamdinh2025
 
 let RIENG_TU = false;      // đã mở chưa
 let CHI_TIET = null;       // dữ liệu chi tiết đã tải
@@ -3467,7 +3472,7 @@ function moDangNhap(){
 function dongDangNhap(){
   const o = document.getElementById('man-rieng');
   if(o) o.remove();
-  if(location.hash === '#riengtu') history.replaceState(null,'',location.pathname);
+  if(location.hash === '#h') history.replaceState(null,'',location.pathname);
 }
 
 async function kiemMatKhau(){
