@@ -1155,6 +1155,48 @@
   .qh-qua b{color:var(--son)}
 
 
+  /* ═══ CHẾ ĐỘ RIÊNG TƯ (đăng nhập ẩn qua #riengtu) ═══ */
+  .man-rieng{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(36,30,24,.55);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .rieng-hop{
+    background:var(--giay);border-radius:14px;
+    padding:24px 22px;max-width:340px;width:100%;
+    box-shadow:0 8px 40px rgba(0,0,0,.3);
+  }
+  .rieng-tieu{
+    font-family:'Noto Serif',serif;font-size:1.2rem;color:var(--son);
+    margin-bottom:6px;
+  }
+  .rieng-mo{font-size:.88rem;color:var(--muc-nhat);margin-bottom:14px;line-height:1.5}
+  #rieng-mk{
+    width:100%;padding:11px 12px;font-size:1rem;font-family:inherit;
+    border:1px solid var(--vien);border-radius:8px;background:#fff;color:var(--muc);
+    box-sizing:border-box;
+  }
+  #rieng-mk:focus{outline:none;border-color:var(--son)}
+  .rieng-loi{color:var(--son);font-size:.85rem;min-height:18px;margin:8px 0 2px}
+  .rieng-nut{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+  .rieng-huy, .rieng-vao{
+    padding:9px 18px;font-size:.92rem;font-family:inherit;
+    border-radius:8px;cursor:pointer;font-weight:600;
+  }
+  .rieng-huy{background:#fff;border:1px solid var(--vien);color:var(--muc-nhat)}
+  .rieng-vao{background:var(--son);border:1px solid var(--son);color:#fff}
+  .rieng-vao:hover{background:var(--son-nhat);border-color:var(--son-nhat)}
+
+  /* Dấu hiệu nhỏ báo đang ở chế độ riêng tư */
+  body.che-do-rieng::after{
+    content:'· riêng tư ·';
+    position:fixed;bottom:8px;right:10px;z-index:150;
+    font-size:.72rem;color:var(--nhan);
+    background:rgba(239,232,216,.9);padding:2px 8px;border-radius:6px;
+    pointer-events:none;
+  }
+
+
 </style>
 </head>
 <body>
@@ -1951,6 +1993,7 @@ function dinhTuyen(){
 
   // Hash #gioithieu -> mở màn giới thiệu dòng họ
   if(id === 'gioithieu'){ moGioiThieu(); return; }
+  if(id === 'riengtu'){ moDangNhap(); return; }
   document.body.classList.remove('xem-gt');
   document.body.classList.remove('xem-qh');   // rời trang -> đóng màn quan hệ
 
@@ -2210,7 +2253,7 @@ function veCaNhan(p){
     '<div class="khoi">'+
       '<div class="khoi-tieu">Thông tin</div>'+
       hang(p.trang_thai === 'da_mat' ? 'Ngày sinh' : 'Năm sinh',
-           p.sinh ? esc(p.sinh)+' <span class="duong-lich">dương lịch</span>' : '')+
+           sinhHienThi(p) ? esc(sinhHienThi(p))+' <span class="duong-lich">dương lịch</span>' : '')+
       hang('Nơi sinh sống', p.lap_nghiep ? esc(p.lap_nghiep) : '')+
       hangMat(p)+
       (p.mo ? hang('Mộ phần', '<span class="mo-phan">'+esc(p.mo)+'</span>') : '')+
@@ -3377,6 +3420,95 @@ function moTaQuanHe(idA, idB){
   return '<div class="qh-to">Tổ chung gần nhất: <b>'+esc(tenPhanBiet(T))+'</b> (đời '+T.doi+')</div>'+
     '<div class="qh-vai">'+vai+'</div>'+
     '<div class="qh-nhac">'+(nhac || 'Đây là vai vế theo dòng họ để bà con tiện gọi nhau.')+'</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CHẾ ĐỘ RIÊNG TƯ (chỉ chủ hộ) — mở qua #riengtu + mật khẩu
+//  Mở ra ngày/tháng sinh đầy đủ của người còn sống (vốn bị che).
+//  Đây là RÀO NHẸ chống tò mò: dữ liệu chi tiết ở file chitiet.json,
+//  trang thường không tải. Người rành kỹ thuật vẫn xem được file đó.
+// ═══════════════════════════════════════════════════════════════════
+
+// Mã BĂM của mật khẩu (không lưu mật khẩu thật). Đổi mã này để đổi mật khẩu:
+// mở Console trình duyệt, chạy:  await bamMk('mật-khẩu-mới')  rồi dán kết quả vào đây.
+const MK_BAM = '1f2d4b1dcb84dc7639d810d325ff611c64452901b7aeaafaf6270d1eb664a405';   // mật khẩu tạm: hophamdinh2025
+
+let RIENG_TU = false;      // đã mở chưa
+let CHI_TIET = null;       // dữ liệu chi tiết đã tải
+
+// Băm chuỗi bằng SHA-256 (có sẵn trong trình duyệt)
+async function bamMk(chuoi){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chuoi));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function moDangNhap(){
+  const cu = document.getElementById('man-rieng');
+  if(cu) cu.remove();
+  const o = document.createElement('div');
+  o.id = 'man-rieng';
+  o.className = 'man-rieng';
+  o.innerHTML =
+    '<div class="rieng-hop">'+
+      '<div class="rieng-tieu">Chế độ riêng tư</div>'+
+      '<div class="rieng-mo">Nhập mật khẩu để xem đầy đủ ngày sinh.</div>'+
+      '<input id="rieng-mk" type="password" placeholder="Mật khẩu" '+
+        'autocomplete="off" onkeydown="if(event.key===\'Enter\')kiemMatKhau()">'+
+      '<div id="rieng-loi" class="rieng-loi"></div>'+
+      '<div class="rieng-nut">'+
+        '<button class="rieng-huy" onclick="dongDangNhap()">Đóng</button>'+
+        '<button class="rieng-vao" onclick="kiemMatKhau()">Mở</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(o);
+  setTimeout(()=>{ const i=document.getElementById('rieng-mk'); if(i) i.focus(); }, 50);
+}
+
+function dongDangNhap(){
+  const o = document.getElementById('man-rieng');
+  if(o) o.remove();
+  if(location.hash === '#riengtu') history.replaceState(null,'',location.pathname);
+}
+
+async function kiemMatKhau(){
+  const mk = (document.getElementById('rieng-mk')||{}).value || '';
+  const loi = document.getElementById('rieng-loi');
+  if(MK_BAM === '__CHUA_DAT__'){
+    loi.textContent = 'Chưa đặt mật khẩu. Xem hướng dẫn trong mã nguồn.';
+    return;
+  }
+  const bam = await bamMk(mk);
+  if(bam !== MK_BAM){
+    loi.textContent = 'Mật khẩu chưa đúng.';
+    return;
+  }
+  // Đúng -> tải chi tiết, bật chế độ riêng tư
+  try{
+    const r = await fetch('chitiet.json');
+    CHI_TIET = r.ok ? await r.json() : { sinh:{}, nguoi_an:{} };
+  }catch(e){ CHI_TIET = { sinh:{}, nguoi_an:{} }; }
+  RIENG_TU = true;
+
+  // GỘP người ẩn vào dữ liệu chung -> cây hiện đầy đủ cả nhánh khác.
+  if(CHI_TIET.nguoi_an){
+    Object.assign(DL.nguoi, CHI_TIET.nguoi_an);
+    tinhTenTrung();          // tính lại tên trùng (có thêm người)
+  }
+
+  dongDangNhap();
+  document.body.classList.add('che-do-rieng');
+  // Vẽ lại toàn bộ (đếm, danh sách...) để bao gồm người ẩn
+  khoiDong();
+  dinhTuyen();
+}
+
+// Ngày sinh để hiển thị: nếu đã mở riêng tư và người này có bản chi tiết
+// thì dùng ngày/tháng đầy đủ; không thì dùng bản công khai (chỉ năm).
+function sinhHienThi(p){
+  if(RIENG_TU && CHI_TIET && CHI_TIET.sinh && CHI_TIET.sinh[p.id]){
+    return CHI_TIET.sinh[p.id];
+  }
+  return p.sinh || '';
 }
 
 function timTam(){
