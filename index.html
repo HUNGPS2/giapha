@@ -723,6 +723,8 @@
     display:flex;flex-direction:column;
     position:fixed;inset:0;z-index:150;
     background:var(--giay);
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
   }
 
   .sd-thanh{
@@ -901,6 +903,8 @@
     display:flex;flex-direction:column;
     position:fixed;inset:0;z-index:120;
     background:var(--giay);
+    -webkit-user-select:none;user-select:none;
+    -webkit-touch-callout:none;
   }
   .tc-thanh{
     flex-shrink:0;display:flex;align-items:center;gap:12px;
@@ -2461,13 +2465,9 @@ function moToanCay(canhId){
   TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
   document.body.classList.add('xem-toancay');
   veToanCay(to.id);
-  // Người nhánh ngoại (tổ tiên đằng ngoại) KHÔNG có ô riêng trong panorama.
-  // Tìm CẦU NỐI gần nhất có ô (con gái đã lấy chồng trong họ...) để căn vào.
   tcCanVaoGiua(timCanhCoO(canhId || to.id, to.id));
 }
 
-// Người này có Ô trong panorama không? (có nếu nằm trong cây con cháu, HOẶC
-// là vợ/chồng của người trong cây - panorama vẽ vợ/chồng cạnh nhau)
 function coOtrongToanCay(id, toId){
   if(!id) return false;
   if(trongCayHuyet(id, toId)) return true;
@@ -2478,7 +2478,6 @@ function coOtrongToanCay(id, toId){
   return false;
 }
 
-// Đi theo con cháu từ toId, có chạm tới id không.
 function trongCayHuyet(id, toId){
   const dich = String(id), daXet = new Set();
   function duyet(cur){
@@ -2493,8 +2492,6 @@ function trongCayHuyet(id, toId){
   return duyet(String(toId));
 }
 
-// Tìm người CÓ ô để căn. `id` có ô -> dùng luôn. Không (nhánh ngoại) -> LAN RA
-// MỌI HƯỚNG (cha mẹ, con cháu, vợ/chồng) tìm cầu nối GẦN NHẤT chạm vào họ Phạm.
 function timCanhCoO(id, toId){
   if(coOtrongToanCay(id, toId)) return id;
   const daXet = new Set([id]);
@@ -2530,7 +2527,6 @@ function tcCanVaoGiua(id, thu){
     const mat   = $('#tc-mat');
     if(!khung || !mat) return;
     const o = mat.querySelector('.tc-o[data-id="'+id+'"]');
-    // Ô có thể chưa render xong (nhất là ô vợ/chồng vẽ sau) -> thử lại vài lần
     if(!o || !o.getBoundingClientRect().width){
       if(thu < 10) tcCanVaoGiua(id, thu+1);
       return;
