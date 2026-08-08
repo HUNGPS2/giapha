@@ -2461,22 +2461,83 @@ function moToanCay(canhId){
   TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
   document.body.classList.add('xem-toancay');
   veToanCay(to.id);
-  tcCanVaoGiua(canhId || to.id);
+  // Người nhánh ngoại (tổ tiên đằng ngoại) KHÔNG có ô riêng trong panorama.
+  // Tìm CẦU NỐI gần nhất có ô (con gái đã lấy chồng trong họ...) để căn vào.
+  tcCanVaoGiua(timCanhCoO(canhId || to.id, to.id));
+}
+
+// Người này có Ô trong panorama không? (có nếu nằm trong cây con cháu, HOẶC
+// là vợ/chồng của người trong cây - panorama vẽ vợ/chồng cạnh nhau)
+function coOtrongToanCay(id, toId){
+  if(!id) return false;
+  if(trongCayHuyet(id, toId)) return true;
+  const p = DL.nguoi[id];
+  if(p) for(const vc of (p.vo_chong || [])){
+    if(trongCayHuyet(vc, toId)) return true;
+  }
+  return false;
+}
+
+// Đi theo con cháu từ toId, có chạm tới id không.
+function trongCayHuyet(id, toId){
+  const dich = String(id), daXet = new Set();
+  function duyet(cur){
+    if(cur === dich) return true;
+    if(daXet.has(cur)) return false;
+    daXet.add(cur);
+    const p = DL.nguoi[cur];
+    if(!p) return false;
+    for(const c of (p.con || [])) if(DL.nguoi[c] && duyet(c)) return true;
+    return false;
+  }
+  return duyet(String(toId));
+}
+
+// Tìm người CÓ ô để căn. `id` có ô -> dùng luôn. Không (nhánh ngoại) -> LAN RA
+// MỌI HƯỚNG (cha mẹ, con cháu, vợ/chồng) tìm cầu nối GẦN NHẤT chạm vào họ Phạm.
+function timCanhCoO(id, toId){
+  if(coOtrongToanCay(id, toId)) return id;
+  const daXet = new Set([id]);
+  let hang = [id];
+  while(hang.length){
+    const sau = [];
+    for(const cur of hang){
+      const p = DL.nguoi[cur];
+      if(!p) continue;
+      const ke = []
+        .concat(p.cha ? [p.cha] : [])
+        .concat(p.me  ? [p.me]  : [])
+        .concat(p.con || [])
+        .concat(p.vo_chong || []);
+      for(const k of ke){
+        if(!DL.nguoi[k] || daXet.has(k)) continue;
+        if(coOtrongToanCay(k, toId)) return k;
+        daXet.add(k);
+        sau.push(k);
+      }
+    }
+    hang = sau;
+  }
+  return toId;
 }
 
 // Đưa một người vào giữa khung toàn cảnh.
 // Người xem cần thấy ngay mình đang ở đâu, thay vì cây neo góc trái.
-function tcCanVaoGiua(id){
+function tcCanVaoGiua(id, thu){
+  thu = thu || 0;
   requestAnimationFrame(()=> requestAnimationFrame(()=>{
     const khung = $('#tc-khung');
     const mat   = $('#tc-mat');
     if(!khung || !mat) return;
     const o = mat.querySelector('.tc-o[data-id="'+id+'"]');
-    if(!o) return;
+    // Ô có thể chưa render xong (nhất là ô vợ/chồng vẽ sau) -> thử lại vài lần
+    if(!o || !o.getBoundingClientRect().width){
+      if(thu < 10) tcCanVaoGiua(id, thu+1);
+      return;
+    }
 
     const rK = khung.getBoundingClientRect();
     const rO = o.getBoundingClientRect();
-    if(!rO.width) return;
 
     // Cộng dồn: rO đo SAU khi transform đã áp.
     TC_DX += (rK.left + rK.width/2)  - (rO.left + rO.width/2);
