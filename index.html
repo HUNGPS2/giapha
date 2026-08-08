@@ -2458,10 +2458,38 @@ function mdSangHtml(md){
 function moToanCay(canhId){
   const to = Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong);
   if(!to){ return; }
+  // Panorama vẽ từ thủy tổ đi XUỐNG theo con cháu. Người nhánh ngoại nối vào
+  // qua hôn nhân (tổ tiên đằng ngoại như cụ Nguyễn Văn Uất) KHÔNG nằm trong
+  // cây con cháu -> không có ô để căn giữa. Kiểm tra trước: nếu người được
+  // chọn không xuất hiện trong cây toàn cảnh, đưa họ sang sơ đồ 4 tầng
+  // (sơ đồ đó vẽ được cả nhánh ngoại).
+  if(canhId && !oTrongToanCay(canhId, to.id)){
+    moSoDo(canhId);
+    return;
+  }
   TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
   document.body.classList.add('xem-toancay');
   veToanCay(to.id);
   tcCanVaoGiua(canhId || to.id);
+}
+
+// Kiểm tra người `id` có nằm trong cây con cháu vẽ từ `toId` không.
+// Đi theo đúng đường mà tcXep vẽ: cha -> p.con. Có memo để nhanh.
+function oTrongToanCay(id, toId){
+  const dich = String(id);
+  const daXet = new Set();
+  function duyet(cur){
+    if(cur === dich) return true;
+    if(daXet.has(cur)) return false;
+    daXet.add(cur);
+    const p = DL.nguoi[cur];
+    if(!p) return false;
+    for(const c of (p.con || [])){
+      if(DL.nguoi[c] && duyet(c)) return true;
+    }
+    return false;
+  }
+  return duyet(String(toId));
 }
 
 // Đưa một người vào giữa khung toàn cảnh.
