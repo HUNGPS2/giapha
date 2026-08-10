@@ -275,7 +275,7 @@
 
   .thanh-tren{
     display:flex;justify-content:space-between;align-items:center;
-    gap:10px 12px;flex-wrap:wrap;margin-bottom:14px;
+    gap:12px;flex-wrap:wrap;margin-bottom:14px;
   }
   .quay-lai{margin-bottom:0}
   .nut-so-do{
@@ -723,8 +723,7 @@
     display:flex;flex-direction:column;
     position:fixed;inset:0;z-index:150;
     background:var(--giay);
-    -webkit-user-select:none;user-select:none;
-    -webkit-touch-callout:none;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
 
   .sd-thanh{
@@ -903,8 +902,7 @@
     display:flex;flex-direction:column;
     position:fixed;inset:0;z-index:120;
     background:var(--giay);
-    -webkit-user-select:none;user-select:none;
-    -webkit-touch-callout:none;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
   }
   .tc-thanh{
     flex-shrink:0;display:flex;align-items:center;gap:12px;
@@ -2472,12 +2470,9 @@ function coOtrongToanCay(id, toId){
   if(!id) return false;
   if(trongCayHuyet(id, toId)) return true;
   const p = DL.nguoi[id];
-  if(p) for(const vc of (p.vo_chong || [])){
-    if(trongCayHuyet(vc, toId)) return true;
-  }
+  if(p) for(const vc of (p.vo_chong || [])){ if(trongCayHuyet(vc, toId)) return true; }
   return false;
 }
-
 function trongCayHuyet(id, toId){
   const dich = String(id), daXet = new Set();
   function duyet(cur){
@@ -2491,26 +2486,19 @@ function trongCayHuyet(id, toId){
   }
   return duyet(String(toId));
 }
-
 function timCanhCoO(id, toId){
   if(coOtrongToanCay(id, toId)) return id;
-  const daXet = new Set([id]);
-  let hang = [id];
+  const daXet = new Set([id]); let hang = [id];
   while(hang.length){
     const sau = [];
     for(const cur of hang){
       const p = DL.nguoi[cur];
       if(!p) continue;
-      const ke = []
-        .concat(p.cha ? [p.cha] : [])
-        .concat(p.me  ? [p.me]  : [])
-        .concat(p.con || [])
-        .concat(p.vo_chong || []);
+      const ke = [].concat(p.cha?[p.cha]:[]).concat(p.me?[p.me]:[]).concat(p.con||[]).concat(p.vo_chong||[]);
       for(const k of ke){
         if(!DL.nguoi[k] || daXet.has(k)) continue;
         if(coOtrongToanCay(k, toId)) return k;
-        daXet.add(k);
-        sau.push(k);
+        daXet.add(k); sau.push(k);
       }
     }
     hang = sau;
@@ -3561,6 +3549,7 @@ async function kiemMatKhau(){
   document.body.classList.add('che-do-rieng');
   // Vẽ lại toàn bộ (đếm, danh sách...) để bao gồm người ẩn
   khoiDong();
+  veNhacGio();       // vẽ lại nhắc giỗ -> gồm cả giỗ người ẩn (nhánh ngoại)
   dinhTuyen();
 }
 
