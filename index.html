@@ -2457,8 +2457,20 @@ function mdSangHtml(md){
   return html;
 }
 
+// Thủy tổ THẬT = người đời 1 huyết thống CÓ CON CHÁU (cả cây dựng từ đó).
+// Không dùng find() người đời 1 đầu tiên, vì có thể có người độc lập khác
+// cũng ở đời 1 (như cụ Phạm Tu đứng lẻ) -> lấy nhầm.
+function timThuyTo(){
+  const ds = Object.values(DL.nguoi).filter(p=>p.doi===1 && p.huyet_thong);
+  if(!ds.length) return null;
+  // Ưu tiên người có con; nếu nhiều, lấy người có nhiều con nhất.
+  const coCon = ds.filter(p=>(p.con||[]).length>0);
+  const nguon = coCon.length ? coCon : ds;
+  return nguon.reduce((a,b)=> (b.con||[]).length > (a.con||[]).length ? b : a);
+}
+
 function moToanCay(canhId){
-  const to = Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong);
+  const to = timThuyTo();
   if(!to){ return; }
   TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
   document.body.classList.add('xem-toancay');
@@ -2729,7 +2741,7 @@ function tcVe(){
   // Về giữa = về người đang được đánh dấu (hoặc thủy tổ nếu không có)
   const mat = $('#tc-mat');
   const dau = mat && mat.querySelector('.tc-o.tc-tam');
-  const to  = Object.values(DL.nguoi).find(p=>p.doi===1 && p.huyet_thong);
+  const to  = timThuyTo();
   tcCanVaoGiua(dau ? dau.dataset.id : (to ? to.id : null));
 }
 
@@ -3571,8 +3583,8 @@ function timTam(){
   if(tam) return tam.id;
 
   // 2. Khong thay (doi ten? xoa?) -> lui ve Thuy to, khong de trong
-  const goc = ds.filter(p => p.doi === 1 && p.huyet_thong);
-  return goc.length ? goc[0].id : null;
+  const goc = timThuyTo();
+  return goc ? goc.id : null;
 }
 
 $('#mo-so-do').onclick = e=>{
