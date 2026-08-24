@@ -910,6 +910,42 @@
     padding:8px 12px;background:#fff;
     border-bottom:1px solid var(--vien);
   }
+  .tc-thanh .sd-tieu{flex:0 1 auto;min-width:0;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+
+  /* Ô tìm tên ngay trên khung toàn cảnh — cây càng nhiều người càng
+     cần cách này thay vì kéo tay dò từng ô. */
+  .tc-tim-bao{position:relative;flex:1 1 140px;min-width:90px;max-width:260px}
+  .tc-tim{
+    width:100%;box-sizing:border-box;
+    padding:6px 10px;font-size:.82rem;font-family:'Noto Serif',serif;
+    border:1px solid var(--vien);border-radius:6px;background:var(--giay);
+    color:var(--muc);
+  }
+  .tc-tim:focus{outline:none;border-color:var(--son)}
+  .tc-tim-ket{
+    display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);
+    max-height:280px;overflow:auto;
+    background:#fff;border:1px solid var(--vien);border-radius:6px;
+    box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:130;
+  }
+  .tc-tim-ket.mo{display:block}
+  .tc-tim-muc{
+    padding:8px 10px;font-size:.82rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    border-bottom:1px solid var(--giay-dam);
+  }
+  .tc-tim-muc:last-child{border-bottom:none}
+  .tc-tim-muc:hover{background:var(--giay-dam)}
+  .tc-tim-doi{font-size:.7rem;color:var(--son);flex-shrink:0}
+  .tc-tim-rong{padding:10px;font-size:.8rem;color:var(--muc);opacity:.7}
+  @media(max-width:640px){
+    .tc-thanh{flex-wrap:wrap;gap:8px}
+    .tc-thanh .sd-tieu{display:none}                 /* nhường chỗ cho ô tìm trên màn hẹp */
+    .tc-tim-bao{order:1;flex:1 1 100%;max-width:none}
+    .tc-thanh > button.sd-nut{order:0}
+    .sd-zoom{order:2;margin-left:auto}
+  }
   .tc-khung{
     flex:1;overflow:hidden;position:relative;
     touch-action:none;cursor:grab;
@@ -2352,6 +2388,7 @@ function dongSoDo(){
 //  Chỉ hiện người huyết thống + vợ/chồng của họ. Ô nhỏ, chỉ họ tên.
 // ═══════════════════════════════════════════════════════════════════
 let TC_ZOOM = 1, TC_DX = 0, TC_DY = 0;
+let TC_POS_HIEN = null;   // POS đang hiện trên khung toàn cảnh — dùng để tìm tên
 
 const TC_O_RONG = 90;      // bề rộng một ô người
 const TC_O_CAO  = 34;      // chiều cao một ô
@@ -2732,12 +2769,18 @@ function veToanCay(toId){
   tcVeTuPos(toId, POS, oList, noiList);
   const soDoi = layout ? layout.profile.length : 16;
   const cao = soDoi * (TC_O_CAO + TC_KHE_Y);
+  TC_POS_HIEN = POS;
 
   const o = $('#toancay');
   o.innerHTML =
     '<div class="tc-thanh">'+
       '<button class="sd-nut" onclick="dongToanCay()" title="Đóng">✕</button>'+
       '<div class="sd-tieu">Toàn cảnh — <b>họ PHẠM ĐÌNH</b></div>'+
+      '<div class="tc-tim-bao">'+
+        '<input type="search" id="tc-tim" class="tc-tim" placeholder="Tìm tên…" '+
+               'autocomplete="off" spellcheck="false">'+
+        '<div class="tc-tim-ket" id="tc-tim-ket"></div>'+
+      '</div>'+
       '<div class="sd-zoom">'+
         '<button class="sd-nut" onclick="tcZoom(-1)">−</button>'+
         '<button class="sd-nut" onclick="tcZoom(1)">+</button>'+
@@ -2753,7 +2796,82 @@ function veToanCay(toId){
     '<div class="sd-huong-dan">Bấm một người để xem sơ đồ 4 đời của họ · Kéo để di chuyển</div>';
 
   tcGanSuKien();
+  tcTimGanSuKien();
   tcApDung();
+}
+
+// ── Tìm tên ngay trên khung toàn cảnh ──
+// Chỉ tìm trong những người ĐANG HIỂN THỊ (TC_POS_HIEN), gõ có dấu hay
+// không dấu đều được (dùng lại boDau() như ô tìm kiếm chính).
+function tcTimLoc(tuKhoa){
+  const tk = boDau(tuKhoa.trim());
+  if(!tk || !TC_POS_HIEN) return [];
+  const ketQua = [];
+  for(const id in TC_POS_HIEN){
+    const p = DL.nguoi[id];
+    if(!p) continue;
+    if(boDau(p.ten || '').includes(tk)) ketQua.push(p);
+    if(ketQua.length >= 20) break;
+  }
+  return ketQua;
+}
+
+function tcTimVeKetQua(list, tuKhoa){
+  const hop = $('#tc-tim-ket');
+  if(!hop) return;
+  if(!tuKhoa.trim()){ hop.innerHTML = ''; hop.classList.remove('mo'); return; }
+  if(!list.length){
+    hop.innerHTML = '<div class="tc-tim-rong">Không tìm thấy ai khớp.</div>';
+    hop.classList.add('mo');
+    return;
+  }
+  hop.innerHTML = list.map(p =>
+    '<div class="tc-tim-muc" data-id="'+p.id+'">'+
+      esc(p.ten)+
+      (p.doi ? '<span class="tc-tim-doi">Đời '+p.doi+'</span>' : '')+
+    '</div>'
+  ).join('');
+  hop.classList.add('mo');
+}
+
+function tcTimChon(id){
+  const hop = $('#tc-tim-ket');
+  if(hop){ hop.innerHTML = ''; hop.classList.remove('mo'); }
+  tcCanVaoGiua(id);
+}
+
+function tcTimGanSuKien(){
+  const o = $('#tc-tim');
+  const hop = $('#tc-tim-ket');
+  if(!o || !hop) return;
+
+  o.addEventListener('input', ()=>{
+    const list = tcTimLoc(o.value);
+    tcTimVeKetQua(list, o.value);
+  });
+
+  o.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){
+      const dau = hop.querySelector('.tc-tim-muc');
+      if(dau) tcTimChon(dau.dataset.id);
+    }else if(e.key === 'Escape'){
+      o.value = '';
+      hop.innerHTML = ''; hop.classList.remove('mo');
+      o.blur();
+    }
+  });
+
+  hop.addEventListener('pointerup', e=>{
+    const muc = e.target.closest('.tc-tim-muc');
+    if(muc) tcTimChon(muc.dataset.id);
+  });
+
+  // Bấm ra ngoài -> đóng danh sách gợi ý (giữ nguyên chữ đã gõ)
+  document.addEventListener('pointerdown', e=>{
+    if(!hop.classList.contains('mo')) return;
+    if(e.target === o || hop.contains(e.target)) return;
+    hop.innerHTML = ''; hop.classList.remove('mo');
+  });
 }
 
 function tcApDung(){
