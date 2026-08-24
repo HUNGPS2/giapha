@@ -2575,17 +2575,26 @@ function tcRongNode(id){
   return TC_O_RONG + soVC * (TC_O_RONG + TC_VC_KHE);
 }
 
-// ─── BỐ CỤC HAI LƯỢT ───
-// Lượt 1: tính toạ độ x của MỌI người vào map POS (chỉ tính, không vẽ).
-//         Cha luôn nằm giữa các con; nếu node cha (gồm vợ) cần nhiều chỗ
-//         hơn dải con, DỜI CẢ NHÁNH con sang phải - không làm lệch trục cha.
-// Lượt 2: vẽ ô + đường nối từ POS.
+// ─── BỐ CỤC CÂY (kiểu Reingold–Tilford, dựa trên "đường viền") ───
+// Ý tưởng: mỗi cụm (một người + toàn bộ con cháu) không còn chiếm nguyên
+// một khối chữ nhật bề rộng cố định như trước (khiến các nhánh đơn giản bị
+// đẩy ra xa chỉ vì MỘT nhánh khác có hậu duệ đông ở đời xa bên dưới).
+// Thay vào đó, mỗi cụm tự xếp con của nó trước (đệ quy, toạ độ cục bộ bắt
+// đầu từ 0), rồi trả về một "đường viền" — với MỖI ĐỜI, mép trái/phải mà
+// cụm đó thực sự chiếm ở đời đó. Khi ghép hai cụm anh em cạnh nhau, ta chỉ
+// cần né đúng những đời mà cả hai cụm CÙNG có người — dựa theo đường viền —
+// chứ không né theo bề rộng lớn nhất trong toàn bộ cụm. Nhờ vậy hai nhánh
+// có thể "lồng" gần nhau ở những đời không đụng độ, giúp người cùng đời
+// đứng sát nhau hơn, đỡ bị kéo dạt ra xa một cách không cần thiết.
 //
-// tcXep(id, x, doi): đặt cụm gốc id bắt đầu tại x, trả về BỀ RỘNG cụm.
-//   Ghi vào POS[id] = { htX, y }  (htX = tâm ô huyết thống của người này)
-function tcXep(id, x, doi, POS){
+// tcLayout(id, doi) trả về:
+//   { POS, profile, htX }
+//   - POS: map con-cháu -> {htX, y} theo toạ độ CỤC BỘ của cụm này
+//   - profile: mảng [trai,phai] cho từng đời, đời 0 = chính node id
+//   - htX: toạ độ tâm ô huyết thống của id (toạ độ cục bộ)
+function tcLayout(id, doi){
   const p = DL.nguoi[id];
-  if(!p) return 0;
+  if(!p) return null;
   const y = doi * (TC_O_CAO + TC_KHE_Y);
   const rongNode = tcRongNode(id);
 
@@ -2593,44 +2602,60 @@ function tcXep(id, x, doi, POS){
               .sort((a,b)=>(a.thu_tu||0)-(b.thu_tu||0));
 
   if(!con.length){
-    POS[id] = { htX: x + TC_O_RONG/2, y };
-    return rongNode;
+    const htX = TC_O_RONG/2;
+    const trai = htX - TC_O_RONG/2;           // = 0
+    const POS = {}; POS[id] = { htX, y };
+    return { POS, profile: [[trai, trai + rongNode]], htX };
   }
 
-  // Xếp con trước, bắt đầu tạm từ x
-  let cx = x, rongCon = 0;
-  con.forEach((c,i)=>{
-    const w = tcXep(c.id, cx, doi+1, POS);
-    cx += w + TC_KHE_X;
-    rongCon += w + (i < con.length-1 ? TC_KHE_X : 0);
+  const conLayouts = con.map(c => tcLayout(c.id, doi+1));
+
+  // Xếp lần lượt các cụm con cạnh nhau: cụm sau chỉ bị đẩy sang phải
+  // đúng bằng mức cần để không đụng cụm trước, SO SÁNH THEO TỪNG ĐỜI
+  // (đường viền), không so theo bề rộng toàn cụm.
+  const offsets = [];
+  let combTrai = [], combPhai = [];
+  conLayouts.forEach((cl, i) => {
+    let off = 0;
+    if(i > 0){
+      for(let r = 0; r < Math.min(combPhai.length, cl.profile.length); r++){
+        const can = combPhai[r] + TC_KHE_X - cl.profile[r][0];
+        if(can > off) off = can;
+      }
+    }
+    offsets.push(off);
+    for(let r = 0; r < cl.profile.length; r++){
+      const t = cl.profile[r][0] + off, ph = cl.profile[r][1] + off;
+      combTrai[r] = (combTrai[r] === undefined) ? t : Math.min(combTrai[r], t);
+      combPhai[r] = (combPhai[r] === undefined) ? ph : Math.max(combPhai[r], ph);
+    }
+  });
+
+  // Gộp POS của các con (đã dịch theo offset)
+  const POS = {};
+  conLayouts.forEach((cl, i) => {
+    const off = offsets[i];
+    for(const k in cl.POS){
+      POS[k] = { htX: cl.POS[k].htX + off, y: cl.POS[k].y };
+    }
   });
 
   // Trục cha = giữa ô huyết thống con đầu và con cuối
-  const htDau  = POS[con[0].id].htX;
-  const htCuoi = POS[con[con.length-1].id].htX;
-  let htXcha = (htDau + htCuoi) / 2;
+  const xDau  = conLayouts[0].htX + offsets[0];
+  const xCuoi = conLayouts[conLayouts.length-1].htX + offsets[offsets.length-1];
+  const htXcha = (xDau + xCuoi) / 2;
 
-  // Node cha bắt đầu tại htXcha - nửa ô ht. Nếu thò trái quá mép x,
-  // DỜI CẢ NHÁNH con sang phải cho vừa (giữ trục cha ở giữa con).
-  let nodeX = htXcha - TC_O_RONG/2;
-  if(nodeX < x){
-    const dich = x - nodeX;
-    for(const c of con) tcDich(c.id, dich, POS);
-    htXcha += dich;
-    nodeX  += dich;
-    rongCon += dich;
-  }
+  const trai = htXcha - TC_O_RONG/2;
+  const phai = trai + rongNode;
 
   POS[id] = { htX: htXcha, y };
-  const rongCumCon = (nodeX < x ? 0 : 0) + rongCon;
-  return Math.max(nodeX + rongNode - x, rongCumCon);
-}
 
-// Dời cả một nhánh (id và mọi con cháu) sang phải 'd' px
-function tcDich(id, d, POS){
-  if(POS[id]) POS[id].htX += d;
-  const p = DL.nguoi[id];
-  for(const c of (p.con || [])) if(DL.nguoi[c]) tcDich(c, d, POS);
+  // Đường viền của cả cụm = hàng của chính node cha, nối tiếp đường viền
+  // (đã gộp) của các con.
+  const profile = [[trai, phai]];
+  for(let r = 0; r < combTrai.length; r++) profile.push([combTrai[r], combPhai[r]]);
+
+  return { POS, profile, htX: htXcha };
 }
 
 // Sau khi có POS, vẽ ô + đường nối
@@ -2687,10 +2712,25 @@ function tenNgan(ten){
 
 function veToanCay(toId){
   const oList = [], noiList = [];
-  const POS = {};
-  const rong = tcXep(toId, 0, 0, POS);
+  const layout = tcLayout(toId, 0);
+  const POS = layout ? layout.POS : {};
+
+  // Đường viền tổng của cả cây cho biết mép trái/phải thực sự dùng tới —
+  // dịch toàn bộ về toạ độ không âm rồi suy ra bề rộng/chiều cao khung vẽ.
+  let minX = 0, maxX = 0;
+  if(layout){
+    layout.profile.forEach(([t, ph]) => {
+      if(t  < minX) minX = t;
+      if(ph > maxX) maxX = ph;
+    });
+  }
+  if(minX !== 0){
+    for(const k in POS) POS[k].htX -= minX;
+  }
+  const rong = maxX - minX;
+
   tcVeTuPos(toId, POS, oList, noiList);
-  const soDoi = 16;
+  const soDoi = layout ? layout.profile.length : 16;
   const cao = soDoi * (TC_O_CAO + TC_KHE_Y);
 
   const o = $('#toancay');
