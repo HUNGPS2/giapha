@@ -1410,9 +1410,6 @@ let LOC_DOI = DOI_MAC_DINH;
 let TU_KHOA = '';
 
 const $ = s => document.querySelector(s);
-const LAMA = ['','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII',
-              'XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX',
-              'XXI','XXII','XXIII','XXIV','XXV'];
 
 // Bỏ dấu — phải khớp đúng với hàm bo_dau() bên Python
 function boDau(s){
@@ -1609,7 +1606,7 @@ function ve(){
     const khac = ds.length - ht - dr;
     out.push(
       '<div class="doi-nhom">'+
-        '<div class="doi-tieu">Đời '+(LAMA[d]||d)+
+        '<div class="doi-tieu">Đời '+d+
           '<span>'+ht+' con cháu'+(dr? ' · '+dr+' dâu/rể':'')+
             (khac? ' · '+khac+' khác':'')+
           '</span>'+
