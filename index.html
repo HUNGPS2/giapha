@@ -910,42 +910,6 @@
     padding:8px 12px;background:#fff;
     border-bottom:1px solid var(--vien);
   }
-  .tc-thanh .sd-tieu{flex:0 1 auto;min-width:0;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap}
-
-  /* Ô tìm tên ngay trên khung toàn cảnh — cây càng nhiều người càng
-     cần cách này thay vì kéo tay dò từng ô. */
-  .tc-tim-bao{position:relative;flex:1 1 140px;min-width:90px;max-width:260px}
-  .tc-tim{
-    width:100%;box-sizing:border-box;
-    padding:6px 10px;font-size:.82rem;font-family:'Noto Serif',serif;
-    border:1px solid var(--vien);border-radius:6px;background:var(--giay);
-    color:var(--muc);
-  }
-  .tc-tim:focus{outline:none;border-color:var(--son)}
-  .tc-tim-ket{
-    display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);
-    max-height:280px;overflow:auto;
-    background:#fff;border:1px solid var(--vien);border-radius:6px;
-    box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:130;
-  }
-  .tc-tim-ket.mo{display:block}
-  .tc-tim-muc{
-    padding:8px 10px;font-size:.82rem;cursor:pointer;
-    display:flex;align-items:center;justify-content:space-between;gap:8px;
-    border-bottom:1px solid var(--giay-dam);
-  }
-  .tc-tim-muc:last-child{border-bottom:none}
-  .tc-tim-muc:hover{background:var(--giay-dam)}
-  .tc-tim-doi{font-size:.7rem;color:var(--son);flex-shrink:0}
-  .tc-tim-rong{padding:10px;font-size:.8rem;color:var(--muc);opacity:.7}
-  @media(max-width:640px){
-    .tc-thanh{flex-wrap:wrap;gap:8px}
-    .tc-thanh .sd-tieu{display:none}                 /* nhường chỗ cho ô tìm trên màn hẹp */
-    .tc-tim-bao{order:1;flex:1 1 100%;max-width:none}
-    .tc-thanh > button.sd-nut{order:0}
-    .sd-zoom{order:2;margin-left:auto}
-  }
   .tc-khung{
     flex:1;overflow:hidden;position:relative;
     touch-action:none;cursor:grab;
@@ -2388,7 +2352,6 @@ function dongSoDo(){
 //  Chỉ hiện người huyết thống + vợ/chồng của họ. Ô nhỏ, chỉ họ tên.
 // ═══════════════════════════════════════════════════════════════════
 let TC_ZOOM = 1, TC_DX = 0, TC_DY = 0;
-let TC_POS_HIEN = null;   // POS đang hiện trên khung toàn cảnh — dùng để tìm tên
 
 const TC_O_RONG = 90;      // bề rộng một ô người
 const TC_O_CAO  = 34;      // chiều cao một ô
@@ -2512,6 +2475,20 @@ function mdSangHtml(md){
 function timThuyTo(){
   const ds = Object.values(DL.nguoi).filter(p=>p.doi===1 && p.huyet_thong);
   if(!ds.length) return null;
+
+  // Uu tien CAO NHAT: nguoi duoc CHINH DONG HO danh dau ro trong ten,
+  // vd 'PHẠM NGỌC (Thủy tổ)' - dang tin nhat, do chu ho tu ghi.
+  //
+  // KHONG con doan theo "ai o Đời 1 co nhieu con nhat" nua: neu mot
+  // nguoi khac cung o Đời 1 (vi thieu lien ket cha/me trong du lieu -
+  // xem canh bao trong convert.py) lai co NHIEU con hon Thuy to that,
+  // cach doan cu se chon NHAM nguoi do lam goc, khien "Xem toan ho"
+  // nhay sang mot nhanh con, khong phai toan bo cay.
+  const danhDau = ds.filter(p => boDau(p.ten).includes('thuy to'));
+  if(danhDau.length) return danhDau[0];
+
+  // Khong tim thay nhan nao (vd truong hop khac chua theo quy uoc nay)
+  // -> lui ve doan theo so con, nhu truoc.
   const coCon = ds.filter(p=>(p.con||[]).length>0);
   const nguon = coCon.length ? coCon : ds;
   return nguon.reduce((a,b)=> (b.con||[]).length > (a.con||[]).length ? b : a);
@@ -2612,26 +2589,17 @@ function tcRongNode(id){
   return TC_O_RONG + soVC * (TC_O_RONG + TC_VC_KHE);
 }
 
-// ─── BỐ CỤC CÂY (kiểu Reingold–Tilford, dựa trên "đường viền") ───
-// Ý tưởng: mỗi cụm (một người + toàn bộ con cháu) không còn chiếm nguyên
-// một khối chữ nhật bề rộng cố định như trước (khiến các nhánh đơn giản bị
-// đẩy ra xa chỉ vì MỘT nhánh khác có hậu duệ đông ở đời xa bên dưới).
-// Thay vào đó, mỗi cụm tự xếp con của nó trước (đệ quy, toạ độ cục bộ bắt
-// đầu từ 0), rồi trả về một "đường viền" — với MỖI ĐỜI, mép trái/phải mà
-// cụm đó thực sự chiếm ở đời đó. Khi ghép hai cụm anh em cạnh nhau, ta chỉ
-// cần né đúng những đời mà cả hai cụm CÙNG có người — dựa theo đường viền —
-// chứ không né theo bề rộng lớn nhất trong toàn bộ cụm. Nhờ vậy hai nhánh
-// có thể "lồng" gần nhau ở những đời không đụng độ, giúp người cùng đời
-// đứng sát nhau hơn, đỡ bị kéo dạt ra xa một cách không cần thiết.
+// ─── BỐ CỤC HAI LƯỢT ───
+// Lượt 1: tính toạ độ x của MỌI người vào map POS (chỉ tính, không vẽ).
+//         Cha luôn nằm giữa các con; nếu node cha (gồm vợ) cần nhiều chỗ
+//         hơn dải con, DỜI CẢ NHÁNH con sang phải - không làm lệch trục cha.
+// Lượt 2: vẽ ô + đường nối từ POS.
 //
-// tcLayout(id, doi) trả về:
-//   { POS, profile, htX }
-//   - POS: map con-cháu -> {htX, y} theo toạ độ CỤC BỘ của cụm này
-//   - profile: mảng [trai,phai] cho từng đời, đời 0 = chính node id
-//   - htX: toạ độ tâm ô huyết thống của id (toạ độ cục bộ)
-function tcLayout(id, doi){
+// tcXep(id, x, doi): đặt cụm gốc id bắt đầu tại x, trả về BỀ RỘNG cụm.
+//   Ghi vào POS[id] = { htX, y }  (htX = tâm ô huyết thống của người này)
+function tcXep(id, x, doi, POS){
   const p = DL.nguoi[id];
-  if(!p) return null;
+  if(!p) return 0;
   const y = doi * (TC_O_CAO + TC_KHE_Y);
   const rongNode = tcRongNode(id);
 
@@ -2639,60 +2607,44 @@ function tcLayout(id, doi){
               .sort((a,b)=>(a.thu_tu||0)-(b.thu_tu||0));
 
   if(!con.length){
-    const htX = TC_O_RONG/2;
-    const trai = htX - TC_O_RONG/2;           // = 0
-    const POS = {}; POS[id] = { htX, y };
-    return { POS, profile: [[trai, trai + rongNode]], htX };
+    POS[id] = { htX: x + TC_O_RONG/2, y };
+    return rongNode;
   }
 
-  const conLayouts = con.map(c => tcLayout(c.id, doi+1));
-
-  // Xếp lần lượt các cụm con cạnh nhau: cụm sau chỉ bị đẩy sang phải
-  // đúng bằng mức cần để không đụng cụm trước, SO SÁNH THEO TỪNG ĐỜI
-  // (đường viền), không so theo bề rộng toàn cụm.
-  const offsets = [];
-  let combTrai = [], combPhai = [];
-  conLayouts.forEach((cl, i) => {
-    let off = 0;
-    if(i > 0){
-      for(let r = 0; r < Math.min(combPhai.length, cl.profile.length); r++){
-        const can = combPhai[r] + TC_KHE_X - cl.profile[r][0];
-        if(can > off) off = can;
-      }
-    }
-    offsets.push(off);
-    for(let r = 0; r < cl.profile.length; r++){
-      const t = cl.profile[r][0] + off, ph = cl.profile[r][1] + off;
-      combTrai[r] = (combTrai[r] === undefined) ? t : Math.min(combTrai[r], t);
-      combPhai[r] = (combPhai[r] === undefined) ? ph : Math.max(combPhai[r], ph);
-    }
-  });
-
-  // Gộp POS của các con (đã dịch theo offset)
-  const POS = {};
-  conLayouts.forEach((cl, i) => {
-    const off = offsets[i];
-    for(const k in cl.POS){
-      POS[k] = { htX: cl.POS[k].htX + off, y: cl.POS[k].y };
-    }
+  // Xếp con trước, bắt đầu tạm từ x
+  let cx = x, rongCon = 0;
+  con.forEach((c,i)=>{
+    const w = tcXep(c.id, cx, doi+1, POS);
+    cx += w + TC_KHE_X;
+    rongCon += w + (i < con.length-1 ? TC_KHE_X : 0);
   });
 
   // Trục cha = giữa ô huyết thống con đầu và con cuối
-  const xDau  = conLayouts[0].htX + offsets[0];
-  const xCuoi = conLayouts[conLayouts.length-1].htX + offsets[offsets.length-1];
-  const htXcha = (xDau + xCuoi) / 2;
+  const htDau  = POS[con[0].id].htX;
+  const htCuoi = POS[con[con.length-1].id].htX;
+  let htXcha = (htDau + htCuoi) / 2;
 
-  const trai = htXcha - TC_O_RONG/2;
-  const phai = trai + rongNode;
+  // Node cha bắt đầu tại htXcha - nửa ô ht. Nếu thò trái quá mép x,
+  // DỜI CẢ NHÁNH con sang phải cho vừa (giữ trục cha ở giữa con).
+  let nodeX = htXcha - TC_O_RONG/2;
+  if(nodeX < x){
+    const dich = x - nodeX;
+    for(const c of con) tcDich(c.id, dich, POS);
+    htXcha += dich;
+    nodeX  += dich;
+    rongCon += dich;
+  }
 
   POS[id] = { htX: htXcha, y };
+  const rongCumCon = (nodeX < x ? 0 : 0) + rongCon;
+  return Math.max(nodeX + rongNode - x, rongCumCon);
+}
 
-  // Đường viền của cả cụm = hàng của chính node cha, nối tiếp đường viền
-  // (đã gộp) của các con.
-  const profile = [[trai, phai]];
-  for(let r = 0; r < combTrai.length; r++) profile.push([combTrai[r], combPhai[r]]);
-
-  return { POS, profile, htX: htXcha };
+// Dời cả một nhánh (id và mọi con cháu) sang phải 'd' px
+function tcDich(id, d, POS){
+  if(POS[id]) POS[id].htX += d;
+  const p = DL.nguoi[id];
+  for(const c of (p.con || [])) if(DL.nguoi[c]) tcDich(c, d, POS);
 }
 
 // Sau khi có POS, vẽ ô + đường nối
@@ -2749,38 +2701,17 @@ function tenNgan(ten){
 
 function veToanCay(toId){
   const oList = [], noiList = [];
-  const layout = tcLayout(toId, 0);
-  const POS = layout ? layout.POS : {};
-
-  // Đường viền tổng của cả cây cho biết mép trái/phải thực sự dùng tới —
-  // dịch toàn bộ về toạ độ không âm rồi suy ra bề rộng/chiều cao khung vẽ.
-  let minX = 0, maxX = 0;
-  if(layout){
-    layout.profile.forEach(([t, ph]) => {
-      if(t  < minX) minX = t;
-      if(ph > maxX) maxX = ph;
-    });
-  }
-  if(minX !== 0){
-    for(const k in POS) POS[k].htX -= minX;
-  }
-  const rong = maxX - minX;
-
+  const POS = {};
+  const rong = tcXep(toId, 0, 0, POS);
   tcVeTuPos(toId, POS, oList, noiList);
-  const soDoi = layout ? layout.profile.length : 16;
+  const soDoi = 16;
   const cao = soDoi * (TC_O_CAO + TC_KHE_Y);
-  TC_POS_HIEN = POS;
 
   const o = $('#toancay');
   o.innerHTML =
     '<div class="tc-thanh">'+
       '<button class="sd-nut" onclick="dongToanCay()" title="Đóng">✕</button>'+
       '<div class="sd-tieu">Toàn cảnh — <b>họ PHẠM ĐÌNH</b></div>'+
-      '<div class="tc-tim-bao">'+
-        '<input type="search" id="tc-tim" class="tc-tim" placeholder="Tìm tên…" '+
-               'autocomplete="off" spellcheck="false">'+
-        '<div class="tc-tim-ket" id="tc-tim-ket"></div>'+
-      '</div>'+
       '<div class="sd-zoom">'+
         '<button class="sd-nut" onclick="tcZoom(-1)">−</button>'+
         '<button class="sd-nut" onclick="tcZoom(1)">+</button>'+
@@ -2796,82 +2727,7 @@ function veToanCay(toId){
     '<div class="sd-huong-dan">Bấm một người để xem sơ đồ 4 đời của họ · Kéo để di chuyển</div>';
 
   tcGanSuKien();
-  tcTimGanSuKien();
   tcApDung();
-}
-
-// ── Tìm tên ngay trên khung toàn cảnh ──
-// Chỉ tìm trong những người ĐANG HIỂN THỊ (TC_POS_HIEN), gõ có dấu hay
-// không dấu đều được (dùng lại boDau() như ô tìm kiếm chính).
-function tcTimLoc(tuKhoa){
-  const tk = boDau(tuKhoa.trim());
-  if(!tk || !TC_POS_HIEN) return [];
-  const ketQua = [];
-  for(const id in TC_POS_HIEN){
-    const p = DL.nguoi[id];
-    if(!p) continue;
-    if(boDau(p.ten || '').includes(tk)) ketQua.push(p);
-    if(ketQua.length >= 20) break;
-  }
-  return ketQua;
-}
-
-function tcTimVeKetQua(list, tuKhoa){
-  const hop = $('#tc-tim-ket');
-  if(!hop) return;
-  if(!tuKhoa.trim()){ hop.innerHTML = ''; hop.classList.remove('mo'); return; }
-  if(!list.length){
-    hop.innerHTML = '<div class="tc-tim-rong">Không tìm thấy ai khớp.</div>';
-    hop.classList.add('mo');
-    return;
-  }
-  hop.innerHTML = list.map(p =>
-    '<div class="tc-tim-muc" data-id="'+p.id+'">'+
-      esc(p.ten)+
-      (p.doi ? '<span class="tc-tim-doi">Đời '+p.doi+'</span>' : '')+
-    '</div>'
-  ).join('');
-  hop.classList.add('mo');
-}
-
-function tcTimChon(id){
-  const hop = $('#tc-tim-ket');
-  if(hop){ hop.innerHTML = ''; hop.classList.remove('mo'); }
-  tcCanVaoGiua(id);
-}
-
-function tcTimGanSuKien(){
-  const o = $('#tc-tim');
-  const hop = $('#tc-tim-ket');
-  if(!o || !hop) return;
-
-  o.addEventListener('input', ()=>{
-    const list = tcTimLoc(o.value);
-    tcTimVeKetQua(list, o.value);
-  });
-
-  o.addEventListener('keydown', e=>{
-    if(e.key === 'Enter'){
-      const dau = hop.querySelector('.tc-tim-muc');
-      if(dau) tcTimChon(dau.dataset.id);
-    }else if(e.key === 'Escape'){
-      o.value = '';
-      hop.innerHTML = ''; hop.classList.remove('mo');
-      o.blur();
-    }
-  });
-
-  hop.addEventListener('pointerup', e=>{
-    const muc = e.target.closest('.tc-tim-muc');
-    if(muc) tcTimChon(muc.dataset.id);
-  });
-
-  // Bấm ra ngoài -> đóng danh sách gợi ý (giữ nguyên chữ đã gõ)
-  document.addEventListener('pointerdown', e=>{
-    if(!hop.classList.contains('mo')) return;
-    if(e.target === o || hop.contains(e.target)) return;
-    hop.innerHTML = ''; hop.classList.remove('mo');
-  });
 }
 
 function tcApDung(){
