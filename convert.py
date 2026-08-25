@@ -210,7 +210,7 @@ def parse():
             p = {'id': pid, 'ten': '', 'so_ten': None,
                  'gioi': '', 'sinh': '', 'mat': '',
                  'noi_sinh': '', 'noi_mat': '', 'mo': '', 'lap_nghiep': '', 'ghi_chu': '',
-                 'fams': [], 'famc': None, 'anh': []}
+                 'fams': [], 'famc': None, 'anh': [], 'an': False}
             i = 0
             raw = r['raw']
             while i < len(raw):
@@ -329,6 +329,23 @@ def parse():
                         if file_:
                             p['anh'].append({'url': file_, 'titl': titl})
                         i = j - 1
+
+                    elif tag == 'FACT':
+                        # Thuoc tinh tuy chinh nguoi dung tu dat ben MyHeritage,
+                        # vd '1 FACT 1' + '2 TYPE Ẩn'. MyHeritage xuat GEDCOM
+                        # se BO DAU ten thuoc tinh trong TYPE -> 'An'/'an'.
+                        # Dung de TAM AN mot nguoi khoi trang cong khai, van
+                        # xem duoc qua che do rieng tu (mat khau).
+                        j = i + 1
+                        loai = ''
+                        while j < len(raw) and raw[j][0] > 1:
+                            sub = raw[j][1]
+                            if sub.startswith('TYPE '):
+                                loai = sub[5:].strip()
+                            j += 1
+                        if bo_dau(loai) == 'an':
+                            p['an'] = True
+                        i = j - 1
                 i += 1
             people[pid] = p
 
@@ -440,13 +457,38 @@ def tinh_doi(people, fams):
         else:
             people[pid]['huyet_thong'] = False
 
-    # Buoc 2: dau/re lay doi theo vo/chong
-    for pid, p in people.items():
-        if p.get('huyet_thong'):
-            continue
-        doi_ban = [people[b]['doi'] for b in la_vo_chong_cua.get(pid, set())
-                   if b in people and 'doi' in people[b]]
-        p['doi'] = min(doi_ban) if doi_ban else 0
+    # Buoc 2: dau/re lay doi theo vo/chong.
+    #
+    # LAP DEN KHI ON DINH - khong chi mot luot. Mot luot duy nhat se PHU
+    # THUOC THU TU DUYET DICT: neu dau/re A dang duoc tinh truoc khi
+    # vo/chong B (cung la dau/re, vi du du lieu nhap trung/nham) cua ho
+    # kip co doi, A se bi loai khoi doi_ban -> roi xuong doi 0 - SAI,
+    # dung ra A phai duoc doi dung cua B truyen sang, chi la B tinh sau.
+    # Lap nhieu luot dam bao doi duoc TRUYEN DUNG bat ke thu tu, ke ca
+    # qua nhieu buoc (dau/re noi qua dau/re khac).
+    chua_xong = {pid for pid, p in people.items() if not p.get('huyet_thong')}
+    for _ in range(len(people) + 1):
+        con_thay_doi = False
+        for pid in list(chua_xong):
+            p = people[pid]
+            doi_ban = [people[b]['doi'] for b in la_vo_chong_cua.get(pid, set())
+                       if b in people and people[b].get('doi') is not None]
+            if not doi_ban:
+                continue
+            moi = min(doi_ban)
+            if p.get('doi') != moi:
+                p['doi'] = moi
+                con_thay_doi = True
+            chua_xong.discard(pid)
+        if not con_thay_doi:
+            break
+
+    # Con lai: khong noi duoc voi bat ky ai huyet thong qua chuoi vo/chong
+    # nao ca (vi du: ban ghi bi co lap hoan toan, khong vo/chong/con/cha/me -
+    # nhu mot nhan vat lich su duoc ghi them de tham khao). Dung la
+    # KHONG THE xac dinh doi -> de 0, trang se hien "Chua ro cha me".
+    for pid in chua_xong:
+        people[pid].setdefault('doi', 0)
 
     return people
 
@@ -533,6 +575,13 @@ def xuat_gedcom_loc(src, dest, people):
 
         mi = re.match(r'^0 @(I[^@]+)@ INDI$', head)
         pid = mi.group(1) if mi else None
+
+        # Nguoi bi AN (khong co trong 'people' cong khai truyen vao) ->
+        # bo han ban ghi INDI cua ho khoi file xuat ra. Cac FAM tro toi
+        # id nay se treo con tro - vo hai, Topola tu bo qua nhanh do.
+        if pid and pid not in people:
+            continue
+
         song = pid in con_song if pid else False
 
         giu = []
@@ -1035,9 +1084,20 @@ def main():
             khoa.append(nx['thu_tu'] if nx else 0)
         p['khoa_sap'] = khoa
 
+    # ===== TACH NGUOI BI DANH DAU "AN" =====
+    # Nguoi co p['an']=True (tu thuoc tinh FACT/TYPE "An" ben MyHeritage)
+    # KHONG duoc dua vao file cong khai data.json - chi luu trong
+    # chitiet.json (file rieng, chi tai khi dang nhap dung mat khau).
+    # Cac lien ket cha/me/con/anh_em cong khai VAN co the tro toi id
+    # cua nguoi bi an - trang web da xu ly san (loc bo nhung id khong
+    # tim thay), nen nhanh cua nguoi bi an se tu dong bien mat khoi
+    # ban cong khai ma khong lam gay cay.
+    cong_khai = {pid: p for pid, p in people.items() if not p.get('an')}
+    bi_an     = {pid: p for pid, p in people.items() if p.get('an')}
+
     data = {
-        'nguoi': people,
-        'tong': len(people),
+        'nguoi': cong_khai,
+        'tong': len(cong_khai),
         'ten_cay': 'Gia phả PHẠM ĐÌNH — xã Hà Bắc',
     }
 
@@ -1046,9 +1106,30 @@ def main():
     with open(OUT, 'w', encoding='utf-8') as fo:
         json.dump(data, fo, ensure_ascii=False, separators=(',', ':'))
 
+    # ===== chitiet.json: gop nguoi bi an vao ban rieng tu da co =====
+    # Giu nguyen phan 'sinh' (ngay sinh day du cua nguoi con song, dung
+    # rieng cho che do mat khau) neu file da co tu truoc - script nay
+    # KHONG tu sinh ra du lieu do, chi cong them/thay 'nguoi_an'.
+    ct_out = os.path.join(os.path.dirname(OUT) or '.', 'chitiet.json')
+    ct_cu = {}
+    if os.path.exists(ct_out):
+        try:
+            with open(ct_out, encoding='utf-8') as f:
+                ct_cu = json.load(f)
+        except Exception:
+            ct_cu = {}
+    chitiet = {
+        'sinh': ct_cu.get('sinh', {}),
+        'nguoi_an': bi_an,
+        'tong_day_du': len(people),
+    }
+    with open(ct_out, 'w', encoding='utf-8') as fo:
+        json.dump(chitiet, fo, ensure_ascii=False, separators=(',', ':'))
+
     # Xuat GEDCOM DA LOC cho Topola (cung thu muc voi data.json)
+    # - cung BO nguoi bi an, khong dua len file cong khai nay.
     ged_out = os.path.join(os.path.dirname(OUT) or '.', 'giapha.ged')
-    xuat_gedcom_loc(SRC, ged_out, people)
+    xuat_gedcom_loc(SRC, ged_out, cong_khai)
 
     # thong ke
     tt = {'da_mat': 0, 'chua_ro': 0, 'con_song': 0}
@@ -1057,6 +1138,9 @@ def main():
     co_ngay = sum(1 for p in people.values() if p['mat'])
 
     print(f'Tong: {len(people)} nguoi, {len(fams)} gia dinh')
+    if bi_an:
+        print(f'  AN     : {len(bi_an)} nguoi (chi trong chitiet.json, '
+              f'khong dua len data.json cong khai)')
     print(f'  Da mat  : {tt["da_mat"]:>3}  ({co_ngay} co ngay mat, '
           f'{tt["da_mat"] - co_ngay} suy tu doi <= {DOI_CHAC_MAT})')
     print(f'  Chua ro : {tt["chua_ro"]:>3}  (sinh truoc {NAM_NGUONG})')
