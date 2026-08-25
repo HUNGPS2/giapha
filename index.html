@@ -1605,11 +1605,14 @@ function ve(){
   Object.keys(nhom).map(Number).sort((a,b)=>a-b).forEach(d=>{
     const ds = sapGiaPha(nhom[d]);
     const ht = ds.filter(p=>p.huyet_thong).length;
-    const dr = ds.length - ht;
+    const dr = ds.filter(p=>!p.huyet_thong && (p.vo_chong||[]).length).length;
+    const khac = ds.length - ht - dr;
     out.push(
       '<div class="doi-nhom">'+
         '<div class="doi-tieu">Đời '+(LAMA[d]||d)+
-          '<span>'+ht+' con cháu'+(dr? ' · '+dr+' dâu/rể':'')+'</span>'+
+          '<span>'+ht+' con cháu'+(dr? ' · '+dr+' dâu/rể':'')+
+            (khac? ' · '+khac+' khác':'')+
+          '</span>'+
         '</div>'+
         // Chia cum anh em khi DUYET theo doi.
         // Khi TIM KIEM, ket qua roi rac tu nhieu nha khac nhau - chia cum
@@ -1964,8 +1967,13 @@ function theNguoi(p){
     ngayMat = '<div class="the-mat">Giỗ '+esc(p.mat)+'</div>';
   }
 
-  const dr = p.huyet_thong ? '' :
-    '<span class="nhan-dau-re">'+(p.gioi==='F'?'dâu':'rể')+'</span>';
+  // Nhan 'dâu'/'rể' CHI danh cho nguoi THAT SU lay vo/lay chong vao ho -
+  // tuc khong huyet thong VA co vo_chong. Nguoi khong huyet thong nhung
+  // CUNG khong co vo/chong nao (vd mot danh nhan doi co cung mang ho
+  // Pham, duoc them vao de tham khao, khong ket noi hon nhan voi ai
+  // trong cay) thi KHONG phai dau/re - de trong, tranh gan nham nhan.
+  const dr = (!p.huyet_thong && (p.vo_chong || []).length) ?
+    '<span class="nhan-dau-re">'+(p.gioi==='F'?'dâu':'rể')+'</span>' : '';
 
   // KHONG dan nhan 'Truong'/'Thu'.
   // Vi tri trong danh sach CHIL khong du de KHANG DINH ai la con truong:
