@@ -2744,26 +2744,32 @@ function tcApDung(){
 // nếu không người xem mất chỗ mình đang nhìn (gốc scale vốn ở góc trên).
 // Công thức: điểm p (toạ độ trong cây) đang hiện ở giữa khung. Sau khi
 // đổi zoom, dịch TC_DX/DY sao cho p vẫn ở giữa.
-function tcZoom(h, tamX, tamY){
+//
+// tcDatZoom: đặt THẲNG mức zoom tuyệt đối (dùng cho pinch 2 ngón, nơi
+// tỉ lệ zoom tính trực tiếp từ khoảng cách 2 ngón). tcZoom: đổi zoom
+// theo TỪNG NẤC (dùng cho nút +/- và lăn chuột) - gọi lại tcDatZoom.
+function tcDatZoom(zMoi, tamX, tamY){
   const khung = $('#tc-khung');
-  const zCu = TC_ZOOM;
-  const zMoi = Math.min(2, Math.max(0.15, TC_ZOOM + h*0.12));
-  if(zMoi === zCu) return;
+  zMoi = Math.min(2, Math.max(0.15, zMoi));
+  if(zMoi === TC_ZOOM) return;
 
   if(khung){
     const rK = khung.getBoundingClientRect();
-    // Điểm neo: mặc định là tâm khung; cuộn chuột thì neo tại con trỏ.
+    // Điểm neo: mặc định là tâm khung; cuộn chuột/pinch thì neo tại đó.
     const nx = (tamX !== undefined ? tamX : rK.left + rK.width/2)  - rK.left;
     const ny = (tamY !== undefined ? tamY : rK.top  + rK.height/2) - rK.top;
     // Toạ độ điểm neo trong hệ của cây (trước khi đổi zoom)
-    const px = (nx - TC_DX) / zCu;
-    const py = (ny - TC_DY) / zCu;
+    const px = (nx - TC_DX) / TC_ZOOM;
+    const py = (ny - TC_DY) / TC_ZOOM;
     // Sau khi đổi zoom, giữ điểm đó đứng yên tại (nx, ny)
     TC_DX = nx - px * zMoi;
     TC_DY = ny - py * zMoi;
   }
   TC_ZOOM = zMoi;
   tcApDung();
+}
+function tcZoom(h, tamX, tamY){
+  tcDatZoom(TC_ZOOM + h*0.12, tamX, tamY);
 }
 function tcVe(){
   TC_ZOOM = 1; TC_DX = 0; TC_DY = 0;
@@ -2781,19 +2787,73 @@ function tcGanSuKien(){
   let keo=false, dangKeo=false, xN=0, yN=0, dxN=0, dyN=0, oNhan=null;
   const NG=6;
 
+  // ─── Zoom 2 ngón tay (pinch) trên điện thoại ───
+  // touch-action:none ở CSS đã tắt hẳn pinch-zoom MẶC ĐỊNH của trình
+  // duyệt (cần tắt để tự xử lý kéo bằng 1 ngón) - nên phải TỰ LÀM lại
+  // pinch bằng tay ở đây, không thì 2 ngón chẳng còn tác dụng gì.
+  // Theo dõi TỪNG ngón đang chạm bằng pointerId -> {x,y}.
+  const conTro = new Map();
+  let khoangCachCu = 0, zoomLucBatDauPinch = 1, dangPinch = false;
+
   khung.addEventListener('pointerdown', e=>{
-    keo=true; dangKeo=false;
-    xN=e.clientX; yN=e.clientY; dxN=TC_DX; dyN=TC_DY;
-    oNhan=e.target.closest('.tc-o');
     khung.setPointerCapture(e.pointerId);
+    conTro.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+    if(conTro.size === 1){
+      dangPinch = false;
+      keo=true; dangKeo=false;
+      xN=e.clientX; yN=e.clientY; dxN=TC_DX; dyN=TC_DY;
+      oNhan=e.target.closest('.tc-o');
+    }else if(conTro.size === 2){
+      // Ngón thứ 2 vừa chạm -> chuyển hẳn sang pinch, huỷ kéo 1 ngón
+      keo=false; dangPinch=true;
+      const [a,b]=[...conTro.values()];
+      khoangCachCu = Math.hypot(a.x-b.x, a.y-b.y);
+      zoomLucBatDauPinch = TC_ZOOM;
+    }
   });
+
   khung.addEventListener('pointermove', e=>{
+    if(!conTro.has(e.pointerId)) return;
+    conTro.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+    if(conTro.size >= 2){
+      const [a,b]=[...conTro.values()];
+      const khoangCachMoi = Math.hypot(a.x-b.x, a.y-b.y);
+      if(khoangCachCu > 0){
+        const giuaX=(a.x+b.x)/2, giuaY=(a.y+b.y)/2;
+        tcDatZoom(zoomLucBatDauPinch * (khoangCachMoi/khoangCachCu), giuaX, giuaY);
+      }
+      return;
+    }
     if(!keo) return;
     const dx=e.clientX-xN, dy=e.clientY-yN;
     if(!dangKeo && (Math.abs(dx)>NG||Math.abs(dy)>NG)) dangKeo=true;
     if(dangKeo){ TC_DX=dxN+dx; TC_DY=dyN+dy; tcApDung(); }
   });
-  khung.addEventListener('pointerup', ()=>{
+
+  function nhaNgon(e){
+    conTro.delete(e.pointerId);
+    if(conTro.size < 2 && dangPinch){
+      // Vừa nhả bớt 1 trong 2 ngón pinch -> khong coi la "bấm chọn người"
+      dangPinch = false;
+      oNhan = null;
+    }
+    if(conTro.size === 1){
+      // Con lai dung 1 ngon -> tiep tuc keo binh thuong tu vi tri hien tai
+      const con = [...conTro.values()][0];
+      keo = true; dangKeo = true;
+      xN = con.x; yN = con.y; dxN = TC_DX; dyN = TC_DY;
+    }else if(conTro.size === 0){
+      keo = false;
+    }
+  }
+
+  khung.addEventListener('pointerup', e=>{
+    const vuaPinch = dangPinch;
+    nhaNgon(e);
+    if(vuaPinch) return;
+    if(conTro.size > 0) return;   // van con ngon khac dang cham
     keo=false;
     if(dangKeo) return;
     if(oNhan){
@@ -2802,6 +2862,9 @@ function tcGanSuKien(){
       moSoDo(oNhan.dataset.id);
     }
   });
+  khung.addEventListener('pointercancel', nhaNgon);
+  khung.addEventListener('pointerleave', e=>{ if(conTro.has(e.pointerId)) nhaNgon(e); });
+
   khung.addEventListener('wheel', e=>{
     e.preventDefault();
     // Neo tại con trỏ -> phóng to đúng chỗ đang trỏ, như bản đồ
