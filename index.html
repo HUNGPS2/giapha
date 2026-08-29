@@ -2022,7 +2022,7 @@ function dinhTuyen(){
 
   // Hash #gioithieu -> mở màn giới thiệu dòng họ
   if(id === 'gioithieu'){ moGioiThieu(); return; }
-  if(id === 'h'){ moDangNhap(); return; }
+  if(id === 'h'){ moRiengTuTamThoi(); return; }   // TẠM: bỏ hỏi mật khẩu để rà soát — xem ghi chú ở hàm moRiengTuTamThoi()
   document.body.classList.remove('xem-gt');
   document.body.classList.remove('xem-qh');   // rời trang -> đóng màn quan hệ
 
@@ -3648,6 +3648,37 @@ function moDangNhap(){
     '</div>';
   document.body.appendChild(o);
   setTimeout(()=>{ const i=document.getElementById('rieng-mk'); if(i) i.focus(); }, 50);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TẠM THỜI (rà soát dữ liệu Ẩn) — bỏ qua bước hỏi mật khẩu ở link #h.
+//
+// !! NHỚ KHÔI PHỤC LẠI SAU KHI RÀ SOÁT XONG !! Trong lúc hàm này còn
+// được dùng, BẤT KỲ AI biết link .../#h cũng xem được người đang bị
+// Ẩn mà KHÔNG CẦN mật khẩu - vì trang này công khai trên GitHub Pages.
+//
+// Cách khôi phục lại mật khẩu như cũ: lên hàm dinhTuyen() ở trên, đổi
+// dòng "if(id === 'h'){ moRiengTuTamThoi(); return; }" trở lại thành
+// "if(id === 'h'){ moDangNhap(); return; }". Có thể xóa hẳn hàm này
+// (moRiengTuTamThoi) sau khi đổi lại, không bắt buộc.
+// ═══════════════════════════════════════════════════════════════════
+async function moRiengTuTamThoi(){
+  try{
+    const r = await fetch('chitiet.json');
+    CHI_TIET = r.ok ? await r.json() : { sinh:{}, nguoi_an:{} };
+  }catch(e){ CHI_TIET = { sinh:{}, nguoi_an:{} }; }
+  RIENG_TU = true;
+
+  // GỘP người ẩn vào dữ liệu chung -> cây hiện đầy đủ cả nhánh khác.
+  if(CHI_TIET.nguoi_an){
+    Object.assign(DL.nguoi, CHI_TIET.nguoi_an);
+    tinhTenTrung();
+  }
+
+  if(location.hash === '#h') history.replaceState(null,'',location.pathname);
+  document.body.classList.add('che-do-rieng');
+  khoiDong();
+  dinhTuyen();
 }
 
 function dongDangNhap(){
