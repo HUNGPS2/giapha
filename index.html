@@ -800,6 +800,13 @@
   }
   .sd-ngay{font-size:.72rem;color:var(--muc-nhat);margin-top:2px}
 
+  /* Icon nhỏ trên ô dâu/rể còn có nhà ngoại riêng (cha/mẹ ruột của
+     chính họ) chưa hiện trong sơ đồ - gợi ý bấm vào xem thêm. */
+  .sd-ngoai{
+    display:inline-block;font-size:.78rem;color:var(--nhan);
+    vertical-align:middle;
+  }
+
   .sd-huong-dan{
     flex-shrink:0;text-align:center;
     padding:8px;font-size:.74rem;color:var(--nhan);   /* nâu nhũ vàng đồng - đồng bộ sơ đồ */
@@ -2895,14 +2902,31 @@ function lopO(p){
   return p.gioi === 'F' ? 'o-nu' : 'o-nam';
 }
 
+// Dâu/rể CÒN CÓ NHÀ NGOẠI RIÊNG (cha hoặc mẹ của chính họ được ghi trong
+// dữ liệu) hay không - để gợi ý "bấm vào xem thêm". Sơ đồ hiện chỉ vẽ
+// ông/bà bên NỘI (huyết thống), nên nhà ngoại của một dâu/rể sẽ không
+// hiện ra cho tới khi CHÍNH người đó được bấm làm trung tâm mới.
+// Chỉ tính la "co" khi nguoi xem THAT SU thay duoc (ton trong dung
+// che do An/mat khau da co - N[p.cha] se khong ton tai neu dang bi an
+// va nguoi xem chua mo che do rieng tu).
+function coNhaNgoai(p){
+  if(p.huyet_thong) return false;
+  const N = DL.nguoi;
+  return !!((p.cha && N[p.cha]) || (p.me && N[p.me]));
+}
+
 // Vẽ một ô người. tam=true -> ô trung tâm (to hơn, viền đậm).
 function oNguoi(p, tam, coChau, dangXo){
   const ngay = nhanNgay(p);
+  const ngoai = coNhaNgoai(p);
   return (
     '<div class="sd-o '+lopO(p)+(tam ? ' tam' : '')+
         (coChau ? ' co-chau' : '')+(dangXo ? ' dang-xo' : '')+
-        '" data-id="'+p.id+'">'+
-      '<div class="sd-ten">'+esc(p.ten && p.ten.trim() ? p.ten : '(chưa rõ)')+'</div>'+
+        '" data-id="'+p.id+'"'+
+        (ngoai ? ' title="Còn có nhà ngoại riêng — bấm vào tên để xem"' : '')+'>'+
+      '<div class="sd-ten">'+esc(p.ten && p.ten.trim() ? p.ten : '(chưa rõ)')+
+        (ngoai ? ' <span class="sd-ngoai">⌂</span>' : '')+
+      '</div>'+
       (ngay ? '<div class="sd-ngay">'+ngay+'</div>' : '')+
       // Nguoi con co con -> hien mui ten nho, bam de xo/thu cot chau doc
       (coChau ? '<div class="sd-mui-ten">'+(dangXo ? '▲' : '▼')+'</div>' : '')+
@@ -2941,6 +2965,11 @@ function veSoDo(){
               .sort((a,b) => (a.khoa_sap && b.khoa_sap)
                     ? (JSON.stringify(a.khoa_sap) < JSON.stringify(b.khoa_sap) ? -1 : 1)
                     : (a.thu_tu||0) - (b.thu_tu||0));
+
+  // Co ai dang hien icon 'nhà ngoại' trong man nay khong - chi hien
+  // dong huong dan giai thich icon khi that su can, do khong gian
+  // man hinh dien thoai han che.
+  const coNgoaiHienRa = [ong, ba, cha, me, ...banDoi].some(p => p && coNhaNgoai(p));
 
   // ── Dựng HTML ba hàng ──
   let html = '<div class="sd-cay" id="sd-cay">';
@@ -3027,7 +3056,9 @@ function veSoDo(){
       'Bấm lên người đó để chuyển người đó là trung tâm · '+
       'Bấm nút ▼ để xem hàng cháu · '+
       'Bấm giữ để xem lại thông tin đầy đủ · '+
-      'Kéo để di chuyển</div>';
+      'Kéo để di chuyển'+
+      (coNgoaiHienRa ? ' · ⌂ = còn nhà ngoại riêng, bấm vào tên để xem' : '')+
+    '</div>';
 
   ganSuKienSoDo();
   apDungBienDoi();
