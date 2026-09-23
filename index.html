@@ -2065,7 +2065,7 @@ function dinhTuyen(){
 
   // Hash #gioithieu -> mở màn giới thiệu dòng họ
   if(id === 'gioithieu'){ moGioiThieu(); return; }
-  if(id === 'h'){ moDangNhap(); return; }
+  if(id === 'h'){ moRiengTuTamThoi(); return; }
   document.body.classList.remove('xem-gt');
   document.body.classList.remove('xem-qh');   // rời trang -> đóng màn quan hệ
 
@@ -3902,6 +3902,39 @@ function dongDangNhap(){
   const o = document.getElementById('man-rieng');
   if(o) o.remove();
   if(location.hash === '#h') history.replaceState(null,'',location.pathname);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TẠM BỎ MẬT KHẨU cho link #h — theo yêu cầu, chỉ dùng TẠM THỜI.
+// Vào #h sẽ tự động mở chế độ riêng tư luôn, KHÔNG hỏi mật khẩu.
+//
+// ĐỂ BẬT LẠI MẬT KHẨU: tìm dòng
+//   if(id === 'h'){ moRiengTuTamThoi(); return; }
+// đổi lại thành:
+//   if(id === 'h'){ moDangNhap(); return; }
+// (search "TAM BO MAT KHAU" trong file để tìm nhanh 2 chỗ liên quan)
+// ═══════════════════════════════════════════════════════════════
+async function moRiengTuTamThoi(){
+  try{
+    const r = await fetch('chitiet.json');
+    CHI_TIET = r.ok ? await r.json() : { sinh:{}, nguoi_an:{} };
+  }catch(e){ CHI_TIET = { sinh:{}, nguoi_an:{} }; }
+  RIENG_TU = true;
+
+  if(CHI_TIET.nguoi_an){
+    Object.assign(DL.nguoi, CHI_TIET.nguoi_an);
+    tinhTenTrung();
+  }
+
+  // Xoá #h khỏi địa chỉ TRƯỚC khi vẽ lại — nếu không, dinhTuyen() gọi
+  // trong khoiDong() bên dưới sẽ lại thấy #h và gọi chính hàm này,
+  // lặp vô hạn (giống lý do kiemMatKhau() luôn gọi dongDangNhap() trước).
+  if(location.hash === '#h') history.replaceState(null,'',location.pathname);
+
+  document.body.classList.add('che-do-rieng');
+  khoiDong();
+  dinhTuyen();
+  veNhacGio();
 }
 
 async function kiemMatKhau(){
